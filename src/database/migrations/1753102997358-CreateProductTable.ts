@@ -72,7 +72,7 @@ export class CreateProductTable1753102997358 implements MigrationInterface {
           {
             name: 'modified_by_user_id',
             type: 'uuid',
-            isNullable: false,
+            isNullable: true,
           },
         ],
       }),

@@ -75,7 +75,7 @@ export class CreatePartnerTable1753103094010 implements MigrationInterface {
           {
             name: 'modified_by_user_id',
             type: 'uuid',
-            isNullable: false,
+            isNullable: true,
           },
         ],
         uniques: [

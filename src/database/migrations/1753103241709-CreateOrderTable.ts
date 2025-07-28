@@ -13,7 +13,7 @@ export class CreateOrderTable1753103241709 implements MigrationInterface {
 
     await queryRunner.createTable(
       new Table({
-        name: 'order',
+        name: 'orders',
         columns: [
           {
             name: 'id',
@@ -72,7 +72,7 @@ export class CreateOrderTable1753103241709 implements MigrationInterface {
           {
             name: 'modified_by_user_id',
             type: 'uuid',
-            isNullable: false,
+            isNullable: true,
           },
         ],
       }),

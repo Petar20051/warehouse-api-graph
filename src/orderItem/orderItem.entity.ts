@@ -9,9 +9,9 @@ export class OrderItem extends BaseEntity {
 
   @Column({ type: 'uuid' })
   productId!: string;
-  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  @Column({ type: 'numeric', precision: 12, scale: 2 })
   unitPrice!: number;
 
-  @Column({ type: 'decimal' })
+  @Column({ type: 'numeric' })
   quantity!: number;
 }

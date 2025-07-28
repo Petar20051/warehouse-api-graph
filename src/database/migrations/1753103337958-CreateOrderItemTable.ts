@@ -60,7 +60,7 @@ export class CreateOrderItemTable1753103337958 implements MigrationInterface {
           {
             name: 'modified_by_user_id',
             type: 'uuid',
-            isNullable: false,
+            isNullable: true,
           },
         ],
         uniques: [

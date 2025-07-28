@@ -40,7 +40,8 @@ export class CreateInvoiceTable1753103439776 implements MigrationInterface {
           },
           {
             name: 'invoice_number',
-            type: 'text',
+            type: 'varchar',
+            length: '50',
             isNullable: false,
             isUnique: true,
           },
@@ -80,7 +81,7 @@ export class CreateInvoiceTable1753103439776 implements MigrationInterface {
           {
             name: 'modified_by_user_id',
             type: 'uuid',
-            isNullable: false,
+            isNullable: true,
           },
         ],
       }),

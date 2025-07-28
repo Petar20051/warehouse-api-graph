@@ -8,7 +8,7 @@ export class Product extends BaseEntity {
   @Column({ name: 'company_id', type: 'uuid' })
   companyId!: string;
 
-  @Column({ length: 100, unique: true })
+  @Column({ length: 100 })
   name!: string;
 
   @Column({ length: 50, unique: true })

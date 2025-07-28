@@ -1,5 +1,4 @@
 import { Entity, Column } from 'typeorm';
-
 import { BaseEntity } from 'src/common/entities/base.entity';
 
 export enum InvoiceStatus {
@@ -10,6 +9,9 @@ export enum InvoiceStatus {
 
 @Entity({ name: 'invoice' })
 export class Invoice extends BaseEntity {
+  @Column({ type: 'uuid' })
+  orderId!: string;
+
   @Column({ name: 'invoice_number', type: 'varchar', length: 50, unique: true })
   invoiceNumber!: string;
 

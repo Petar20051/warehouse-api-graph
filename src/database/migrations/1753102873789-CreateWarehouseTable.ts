@@ -63,7 +63,7 @@ export class CreateWarehouseTable1753102873789 implements MigrationInterface {
           {
             name: 'modified_by_user_id',
             type: 'uuid',
-            isNullable: false,
+            isNullable: true,
           },
         ],
       }),

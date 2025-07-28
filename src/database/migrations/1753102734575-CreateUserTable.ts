@@ -42,7 +42,10 @@ export class CreateUserTable1753102734575 implements MigrationInterface {
           },
           {
             name: 'role',
-            type: 'varchar',
+            type: 'enum',
+            enum: ['owner', 'operator', 'viewer'],
+            enumName: 'user_role_enum',
+            default: `'viewer'`,
             isNullable: false,
           },
           {
@@ -96,5 +99,6 @@ export class CreateUserTable1753102734575 implements MigrationInterface {
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.dropTable('user');
+    await queryRunner.query(`DROP TYPE IF EXISTS "user_role_enum"`);
   }
 }
