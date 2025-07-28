@@ -18,39 +18,39 @@ export class BaseController<
 > {
   constructor(protected readonly service: BaseService<T>) {}
 
-  findAll(@User() user: AuthUser) {
+  findAll(@CurrentUser() user: AuthUser) {
     return this.service.findAllByCompany(user.companyId);
   }
 
   findOne(
     @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @User() user: AuthUser,
+    @CurrentUser() user: AuthUser,
   ) {
     return this.service.findOne(params.id, user.companyId);
   }
 
-  create(@Body() dto: CreateDto, @User() user: AuthUser) {
+  create(@Body() dto: CreateDto, @CurrentUser() user: AuthUser) {
     return this.service.createWithUserContext(dto, user);
   }
 
   update(
     @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
     @Body() dto: UpdateDto,
-    @User() user: AuthUser,
+    @CurrentUser() user: AuthUser,
   ) {
     return this.service.updateWithUserContext(params.id, dto, user);
   }
 
   softDelete(
     @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @User() user: AuthUser,
+    @CurrentUser() user: AuthUser,
   ) {
     return this.service.softDelete(params.id, user);
   }
 
   hardDelete(
     @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @User() user: AuthUser,
+    @CurrentUser() user: AuthUser,
   ) {
     return this.service.hardDelete(params.id, user.companyId);
   }

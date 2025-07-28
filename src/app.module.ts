@@ -4,16 +4,15 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
-
-import { CompanyModule } from './entities/company/company.module';
-import { UserModule } from './entities/user/user.module';
 import { AuthModule } from './auth/auth.module';
-import { WarehouseModule } from './entities/warehouse/warehouse.module';
-import { ProductModule } from './entities/product/product.module';
-import { PartnerModule } from './entities/partner/partner.module';
-import { OrderModule } from './entities/order/order.module';
-import { OrderItemModule } from './entities/orderItem/orderItem.module';
-import { InvoiceModule } from './entities/invoice/invoice.module';
+import { CompanyModule } from './company/company.module';
+import { UserModule } from './user/user.module';
+import { WarehouseModule } from './warehouse/warehouse.module';
+import { ProductModule } from './product/product.module';
+import { PartnerModule } from './partner/partner.module';
+import { OrderModule } from './order/order.module';
+import { OrderItemModule } from './orderItem/orderItem.module';
+import { InvoiceModule } from './invoice/invoice.module';
 
 @Module({
   imports: [

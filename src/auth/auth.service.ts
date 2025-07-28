@@ -16,7 +16,7 @@ import {
   LoginDto,
   RegisterDto,
   RegisterUserToCompanyDto,
-} from './auth.static';
+} from './auth.types';
 
 @Injectable()
 export class AuthService {
