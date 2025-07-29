@@ -1,126 +1,105 @@
 import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  Param,
-  Post,
-  Put,
-} from '@nestjs/common';
-import { Product } from './product.entity';
-import { ProductService } from './product.service';
-import { ZodValidationPipe } from 'nestjs-zod';
+  Resolver,
+  ResolveField,
+  Parent,
+  Query,
+  Mutation,
+  Args,
+} from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+
 import {
-  CreateProductDto,
+  ProductType,
+  CreateProductInput,
+  UpdateProductInput,
   createProductSchema,
-  UpdateProductDto,
   updateProductSchema,
 } from './product.types';
-import { IdParamDto, idParamSchema } from 'src/common/types/id-param.static';
-import { AuthUser } from 'src/common/types/auth-user';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserRole } from '../user/user.types';
-import { CustomMessage } from 'src/common/decorators/custom-message.decorator';
-import { BaseController } from 'src/common/controller/base.controller';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { Product } from './product.entity';
+import { ProductService } from './product.service';
 
-@ApiTags('Products')
-@ApiBearerAuth('Authorization')
-@Controller('products')
-export class ProductResolver extends BaseController<Product> {
-  constructor(private readonly productService: ProductService) {
+import { BaseResolver } from 'src/common/resolvers/base.resolver';
+import { AuthUser } from 'src/common/types/auth-user';
+import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { UserRole } from 'src/user/user.types';
+
+import { OrderItemService } from 'src/orderItem/orderItem.service';
+import { OrderItemType } from 'src/orderItem/orderItem.types';
+import { OrderItem } from 'src/orderItem/orderItem.entity';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { idParamSchema } from 'src/common/types/id-param.static';
+
+@Resolver(() => ProductType)
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class ProductResolver extends BaseResolver<
+  Product,
+  CreateProductInput,
+  UpdateProductInput
+> {
+  constructor(
+    private readonly productService: ProductService,
+    private readonly orderItemService: OrderItemService,
+  ) {
     super(productService);
   }
 
-  @CustomMessage('Best-selling products retrieved successfully')
-  @Get('/best-selling')
-  @ApiOperation({ summary: 'Get best-selling products' })
-  getBestSellingProducts(@CurrentUser('companyId') companyId: string) {
-    return this.productService.getBestSellingProducts(companyId);
-  }
-
-  @CustomMessage('Products retrieved successfully')
-  @Get()
-  @ApiOperation({ summary: "Get all products for the current user's company" })
-  findAll(@CurrentUser() user: AuthUser) {
+  @Query(() => [ProductType], { name: 'getAllProducts' })
+  override findAll(@CurrentUser() user: AuthUser) {
     return super.findAll(user);
   }
 
-  @CustomMessage('Product retrieved successfully')
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a single product by ID' })
-  @ApiParam({ name: 'id', description: 'Product UUID' })
-  findOne(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  @Query(() => ProductType, { nullable: true, name: 'getProductById' })
+  override findOne(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.findOne(params, user);
+    return super.findOne(id, user);
   }
 
-  @CustomMessage('Product created successfully')
-  @Post()
+  @Mutation(() => ProductType, { name: 'createProduct' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Create a new product' })
-  @ApiBody({
-    type: CreateProductDto,
-    examples: {
-      minimal: { value: { name: '', sku: '', productType: '', basePrice: 0 } },
-    },
-  })
-  create(
-    @Body(new ZodValidationPipe(createProductSchema)) dto: CreateProductDto,
+  override create(
+    @Args('input', new ZodValidationPipe(createProductSchema))
+    input: CreateProductInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.create(dto, user);
+    return super.create(input, user);
   }
 
-  @CustomMessage('Product updated successfully')
-  @Put(':id')
+  @Mutation(() => ProductType, { name: 'updateProduct' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Update a product by ID' })
-  @ApiParam({ name: 'id', description: 'Product UUID' })
-  @ApiBody({
-    type: UpdateProductDto,
-    examples: {
-      empty: { value: { name: '', sku: '', productType: '', basePrice: 0 } },
-    },
-  })
-  update(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @Body(new ZodValidationPipe(updateProductSchema)) dto: UpdateProductDto,
+  override update(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @Args('input', new ZodValidationPipe(updateProductSchema))
+    input: UpdateProductInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return this.productService.updateWithSkuCheck(params.id, dto, user);
+    return super.update(id, input, user);
   }
 
-  @CustomMessage('Product soft-deleted successfully')
-  @Delete(':id')
+  @Mutation(() => Boolean, { name: 'softDeleteProduct' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Soft delete a product by ID' })
-  @ApiParam({ name: 'id', description: 'Product UUID' })
-  softDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override softDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.softDelete(params, user);
+    return super.softDelete(id, user);
   }
 
-  @CustomMessage('Product permanently deleted')
-  @Delete(':id/hard')
+  @Mutation(() => Boolean, { name: 'hardDeleteProduct' })
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Permanently delete a product by ID' })
-  @ApiParam({ name: 'id', description: 'Product UUID' })
-  hardDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override hardDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.hardDelete(params, user);
+    return super.hardDelete(id, user);
+  }
+
+  @ResolveField(() => [OrderItemType], { nullable: 'itemsAndList' })
+  orderItems(@Parent() product: Product): Promise<OrderItem[]> {
+    return this.orderItemService.findByProduct(product.id);
   }
 }

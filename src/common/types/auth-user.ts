@@ -1,4 +1,4 @@
-import { UserRole } from 'src/entities/user/user.static';
+import { UserRole } from 'src/user/user.types';
 
 export type AuthUser = {
   userId: string;

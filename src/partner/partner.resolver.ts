@@ -1,147 +1,103 @@
 import {
-  Controller,
-  Body,
-  Param,
-  Get,
-  Post,
-  Delete,
-  Put,
-} from '@nestjs/common';
+  Resolver,
+  ResolveField,
+  Parent,
+  Query,
+  Mutation,
+  Args,
+} from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 
-import { Partner } from './partner.entity';
-import { PartnerService } from './partner.service';
-import { ZodValidationPipe } from 'nestjs-zod';
 import {
-  CreatePartnerDto,
+  PartnerType,
+  CreatePartnerInput,
+  UpdatePartnerInput,
   createPartnerSchema,
-  UpdatePartnerDto,
   updatePartnerSchema,
 } from './partner.types';
-import { IdParamDto, idParamSchema } from 'src/common/types/id-param.static';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
-import { AuthUser } from 'src/common/types/auth-user';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserRole } from '../user/user.types';
-import { CustomMessage } from 'src/common/decorators/custom-message.decorator';
-import { BaseController } from 'src/common/controller/base.controller';
+import { Partner } from './partner.entity';
+import { PartnerService } from './partner.service';
 
-@ApiTags('Partners')
-@ApiBearerAuth('Authorization')
-@Controller('partners')
-export class PartnerResolver extends BaseController<Partner> {
-  constructor(private readonly partnerService: PartnerService) {
+import { BaseResolver } from 'src/common/resolvers/base.resolver';
+import { AuthUser } from 'src/common/types/auth-user';
+import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { UserRole } from 'src/user/user.types';
+
+import { OrderService } from 'src/order/order.service';
+import { OrderType } from 'src/order/order.types';
+import { Order } from 'src/order/order.entity';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { idParamSchema } from 'src/common/types/id-param.static';
+
+@Resolver(() => PartnerType)
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class PartnerResolver extends BaseResolver<
+  Partner,
+  CreatePartnerInput,
+  UpdatePartnerInput
+> {
+  constructor(
+    private readonly partnerService: PartnerService,
+    private readonly orderService: OrderService,
+  ) {
     super(partnerService);
   }
-
-  @CustomMessage('Top customer retrieved successfully')
-  @Get('top-customer')
-  @ApiOperation({ summary: 'Get top customer based on number of orders' })
-  getTopCustomerByOrders(@CurrentUser() user: AuthUser) {
-    return this.partnerService.getTopCustomerByOrders(user.companyId);
-  }
-
-  @CustomMessage('Partners retrieved successfully')
-  @Get()
-  @ApiOperation({ summary: "Get all partners for the current user's company" })
-  findAll(@CurrentUser() user: AuthUser) {
+  @Query(() => [PartnerType], { name: 'getAllPartners' })
+  override findAll(@CurrentUser() user: AuthUser) {
     return super.findAll(user);
   }
 
-  @CustomMessage('Partner retrieved successfully')
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a single partner by ID' })
-  @ApiParam({ name: 'id', description: 'Partner UUID' })
-  findOne(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  @Query(() => PartnerType, { nullable: true, name: 'getPartnerById' })
+  override findOne(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.findOne(params, user);
+    return super.findOne(id, user);
   }
-
-  @CustomMessage('Partner created successfully')
-  @Post()
+  @Mutation(() => PartnerType, { name: 'createPartner' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Create a new partner' })
-  @ApiBody({
-    type: CreatePartnerDto,
-    description: 'Fields required to create a partner',
-    examples: {
-      minimal: {
-        value: {
-          name: '',
-          type: '',
-          email: '',
-          phone: '',
-          address: '',
-          companyId: '',
-        },
-      },
-    },
-  })
-  create(
-    @Body(new ZodValidationPipe(createPartnerSchema)) dto: CreatePartnerDto,
+  override create(
+    @Args('input', new ZodValidationPipe(createPartnerSchema))
+    input: CreatePartnerInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.create(dto, user);
+    return super.create(input, user);
   }
 
-  @CustomMessage('Partner updated successfully')
-  @Put(':id')
+  @Mutation(() => PartnerType, { name: 'updatePartner' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Update a partner by ID' })
-  @ApiParam({ name: 'id', description: 'Partner UUID' })
-  @ApiBody({
-    type: UpdatePartnerDto,
-    description: 'Fields to update a partner',
-    examples: {
-      empty: {
-        value: {
-          name: '',
-          type: '',
-          email: '',
-          phone: '',
-          address: '',
-          companyId: '',
-        },
-      },
-    },
-  })
-  update(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @Body(new ZodValidationPipe(updatePartnerSchema)) dto: UpdatePartnerDto,
+  override update(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @Args('input', new ZodValidationPipe(updatePartnerSchema))
+    input: UpdatePartnerInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.update(params, dto, user);
+    return super.update(id, input, user);
   }
 
-  @CustomMessage('Partner soft-deleted successfully')
-  @Delete(':id')
+  @Mutation(() => Boolean, { name: 'softDeletePartner' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Soft delete a partner by ID' })
-  @ApiParam({ name: 'id', description: 'Partner UUID' })
-  softDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override softDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.softDelete(params, user);
+    return super.softDelete(id, user);
   }
 
-  @CustomMessage('Partner permanently deleted')
-  @Delete(':id/hard')
+  @Mutation(() => Boolean, { name: 'hardDeletePartner' })
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Permanently delete a partner by ID' })
-  @ApiParam({ name: 'id', description: 'Partner UUID' })
-  hardDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override hardDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.hardDelete(params, user);
+    return super.hardDelete(id, user);
+  }
+
+  @ResolveField(() => [OrderType], { nullable: 'itemsAndList' })
+  orders(@Parent() partner: Partner): Promise<Order[]> {
+    return this.orderService.findByPartner(partner.id);
   }
 }

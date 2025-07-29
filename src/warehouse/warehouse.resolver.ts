@@ -1,130 +1,103 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Body,
-  Param,
-  Put,
-} from '@nestjs/common';
+  Resolver,
+  ResolveField,
+  Parent,
+  Query,
+  Mutation,
+  Args,
+} from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+
 import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiBody,
-  ApiParam,
-} from '@nestjs/swagger';
-import { Warehouse } from './warehouse.entity';
-import { WarehouseService } from './warehouse.service';
-import {
-  CreateWarehouseDto,
+  WarehouseType,
+  CreateWarehouseInput,
+  UpdateWarehouseInput,
   createWarehouseSchema,
-  UpdateWarehouseDto,
   updateWarehouseSchema,
 } from './warehouse.types';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { IdParamDto, idParamSchema } from 'src/common/types/id-param.static';
-import { User } from 'src/auth/decorators/user.decorator';
-import { AuthUser } from 'src/common/types/auth-user';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserRole } from '../user/user.types';
-import { CustomMessage } from 'src/common/decorators/custom-message.decorator';
-import { BaseController } from 'src/common/controller/base.controller';
+import { Warehouse } from './warehouse.entity';
+import { WarehouseService } from './warehouse.service';
 
-@ApiTags('Warehouses')
-@ApiBearerAuth('Authorization')
-@Controller('warehouses')
-export class WarehouseController extends BaseController<Warehouse> {
-  constructor(private readonly warehouseService: WarehouseService) {
+import { BaseResolver } from 'src/common/resolvers/base.resolver';
+import { AuthUser } from 'src/common/types/auth-user';
+import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { UserRole } from 'src/user/user.types';
+
+import { OrderService } from 'src/order/order.service';
+import { OrderType } from 'src/order/order.types';
+import { Order } from 'src/order/order.entity';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { idParamSchema } from 'src/common/types/id-param.static';
+
+@Resolver(() => WarehouseType)
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class WarehouseResolver extends BaseResolver<
+  Warehouse,
+  CreateWarehouseInput,
+  UpdateWarehouseInput
+> {
+  constructor(
+    private readonly warehouseService: WarehouseService,
+    private readonly orderService: OrderService,
+  ) {
     super(warehouseService);
   }
 
-  @CustomMessage('Warehouse top stock data retrieved successfully')
-  @Get('top-stock')
-  @ApiOperation({ summary: 'Get product with highest stock per warehouse' })
-  getProductWithHighestStock(@CurrentUser() user: AuthUser) {
-    return this.warehouseService.getProductWithHighestStock(user.companyId);
-  }
-
-  @CustomMessage('Warehouses retrieved successfully')
-  @Get()
-  @ApiOperation({
-    summary: "Get all warehouses for the current user's company",
-  })
-  findAll(@CurrentUser() user: AuthUser) {
+  @Query(() => [WarehouseType], { name: 'getAllWarehouses' })
+  override findAll(@CurrentUser() user: AuthUser) {
     return super.findAll(user);
   }
 
-  @CustomMessage('Warehouse retrieved successfully')
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a single warehouse by ID' })
-  @ApiParam({ name: 'id', description: 'Warehouse UUID' })
-  findOne(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  @Query(() => WarehouseType, { nullable: true, name: 'getWarehouseById' })
+  override findOne(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.findOne(params, user);
+    return super.findOne(id, user);
   }
 
-  @CustomMessage('Warehouse created successfully')
-  @Post()
+  @Mutation(() => WarehouseType, { name: 'createWarehouse' })
+  override create(
+    @Args('input', new ZodValidationPipe(createWarehouseSchema))
+    input: CreateWarehouseInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return super.create(input, user);
+  }
+
+  @Mutation(() => WarehouseType, { name: 'updateWarehouse' })
+  override update(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @Args('input', new ZodValidationPipe(updateWarehouseSchema))
+    input: UpdateWarehouseInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return super.update(id, input, user);
+  }
+
+  @Mutation(() => Boolean, { name: 'softDeleteWarehouse' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Create a new warehouse' })
-  @ApiBody({
-    type: CreateWarehouseDto,
-    description: 'Fields required to create a warehouse',
-    examples: {
-      minimal: { value: { name: '', location: '', supportedType: '' } },
-    },
-  })
-  create(
-    @Body(new ZodValidationPipe(createWarehouseSchema)) dto: CreateWarehouseDto,
+  override softDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.create(dto, user);
+    return super.softDelete(id, user);
   }
 
-  @CustomMessage('Warehouse updated successfully')
-  @Put(':id')
-  @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Update a warehouse by ID' })
-  @ApiParam({ name: 'id', description: 'Warehouse UUID' })
-  @ApiBody({
-    type: UpdateWarehouseDto,
-    description: 'Fields to update an existing warehouse',
-    examples: {
-      empty: { value: { name: '', location: '', supportedType: '' } },
-    },
-  })
-  update(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @Body(new ZodValidationPipe(updateWarehouseSchema)) dto: UpdateWarehouseDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return super.update(params, dto, user);
-  }
-
-  @CustomMessage('Warehouse soft-deleted successfully')
-  @Delete(':id')
-  @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Soft delete a warehouse by ID' })
-  @ApiParam({ name: 'id', description: 'Warehouse UUID' })
-  softDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return super.softDelete(params, user);
-  }
-
-  @CustomMessage('Warehouse permanently deleted')
-  @Delete(':id/hard')
+  @Mutation(() => Boolean, { name: 'hardDeleteWarehouse' })
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Permanently delete a warehouse by ID' })
-  @ApiParam({ name: 'id', description: 'Warehouse UUID' })
-  hardDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override hardDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.hardDelete(params, user);
+    return super.hardDelete(id, user);
+  }
+
+  @ResolveField(() => [OrderType], { nullable: 'itemsAndList' })
+  orders(@Parent() warehouse: Warehouse): Promise<Order[]> {
+    return this.orderService.findByWarehouse(warehouse.id);
   }
 }

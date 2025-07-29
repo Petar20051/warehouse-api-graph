@@ -1,99 +1,82 @@
-import { Controller, Get, Delete, Body, Param, Put } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiBody,
-  ApiParam,
-} from '@nestjs/swagger';
+import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+
+import { UserType, CreateUserInput, UpdateUserInput } from './user.types';
 import { User } from './user.entity';
 import { UserService } from './user.service';
-import {
-  CreateUserDto,
-  UpdateUserDto,
-  updateUserSchema,
-  UserRole,
-} from './user.types';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { IdParamDto, idParamSchema } from 'src/common/types/id-param.static';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
-import { AuthUser } from 'src/common/types/auth-user';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { CustomMessage } from 'src/common/decorators/custom-message.decorator';
-import { BaseController } from 'src/common/controller/base.controller';
-import { DeepPartial } from 'typeorm';
 
-@ApiTags('Users')
-@ApiBearerAuth('Authorization')
-@Controller('users')
-export class UserResolver extends BaseController<
+import { BaseResolver } from 'src/common/resolvers/base.resolver';
+import { AuthUser } from 'src/common/types/auth-user';
+import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { UserRole } from './user.types';
+
+import { createUserSchema, updateUserSchema } from './user.types';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { idParamSchema } from 'src/common/types/id-param.static';
+
+@Resolver(() => UserType)
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class UserResolver extends BaseResolver<
   User,
-  CreateUserDto,
-  UpdateUserDto
+  CreateUserInput,
+  UpdateUserInput
 > {
   constructor(private readonly userService: UserService) {
     super(userService);
   }
 
-  @CustomMessage('Users retrieved successfully')
-  @Get()
-  @ApiOperation({ summary: "Get all users for the current user's company" })
-  findAll(@CurrentUser() user: AuthUser) {
+  @Query(() => [UserType], { name: 'getAllUsers' })
+  override findAll(@CurrentUser() user: AuthUser) {
     return super.findAll(user);
   }
 
-  @CustomMessage('User retrieved successfully')
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a single user by ID' })
-  @ApiParam({ name: 'id', description: 'User UUID' })
-  findOne(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  @Query(() => UserType, { nullable: true, name: 'getUserById' })
+  override findOne(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.findOne(params, user);
+    return super.findOne(id, user);
   }
 
-  @CustomMessage('User updated successfully')
-  @Put(':id')
-  @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Update a user by ID' })
-  @ApiParam({ name: 'id', description: 'User UUID' })
-  @ApiBody({
-    type: UpdateUserDto,
-    description: 'Fields to update a user',
-    examples: {
-      empty: { value: { fullName: '', email: '', password: '', role: '' } },
-    },
-  })
-  update(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @Body(new ZodValidationPipe(updateUserSchema)) dto: UpdateUserDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return super.update(params, dto as DeepPartial<User>, user);
-  }
-
-  @CustomMessage('User soft-deleted successfully')
-  @Delete(':id')
-  @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Soft delete a user by ID' })
-  @ApiParam({ name: 'id', description: 'User UUID' })
-  softDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return super.softDelete(params, user);
-  }
-
-  @CustomMessage('User permanently deleted')
-  @Delete(':id/hard')
+  @Mutation(() => UserType, { name: 'createUser' })
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Permanently delete a user by ID' })
-  @ApiParam({ name: 'id', description: 'User UUID' })
-  hardDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override create(
+    @Args('input', new ZodValidationPipe(createUserSchema))
+    input: CreateUserInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.hardDelete(params, user);
+    return super.create(input, user);
+  }
+
+  @Mutation(() => UserType, { name: 'updateUser' })
+  @Roles(UserRole.OWNER)
+  override update(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @Args('input', new ZodValidationPipe(updateUserSchema))
+    input: UpdateUserInput,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return super.update(id, input, user);
+  }
+
+  @Mutation(() => Boolean, { name: 'softDeleteUser' })
+  @Roles(UserRole.OWNER)
+  override softDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return super.softDelete(id, user);
+  }
+
+  @Mutation(() => Boolean, { name: 'hardDeleteUser' })
+  @Roles(UserRole.OWNER)
+  override hardDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return super.hardDelete(id, user);
   }
 }

@@ -1,129 +1,108 @@
 import {
-  Controller,
-  Body,
-  Param,
-  Get,
-  Post,
-  Delete,
-  Put,
-} from '@nestjs/common';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { IdParamDto, idParamSchema } from 'src/common/types/id-param.static';
-import { Invoice } from './invoice.entity';
-import { InvoiceService } from './invoice.service';
+  Resolver,
+  ResolveField,
+  Parent,
+  Query,
+  Mutation,
+  Args,
+} from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+
 import {
-  CreateInvoiceDto,
+  InvoiceType,
+  CreateInvoiceInput,
+  UpdateInvoiceInput,
   createInvoiceSchema,
-  UpdateInvoiceDto,
   updateInvoiceSchema,
 } from './invoice.types';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
-import { AuthUser } from 'src/common/types/auth-user';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserRole } from '../user/user.types';
-import { CustomMessage } from 'src/common/decorators/custom-message.decorator';
-import { BaseController } from 'src/common/controller/base.controller';
+import { Invoice } from './invoice.entity';
+import { InvoiceService } from './invoice.service';
 
-@ApiTags('Invoices')
-@ApiBearerAuth('Authorization')
-@Controller('invoices')
-export class InvoiceResolver extends BaseController<
+import { BaseResolver } from 'src/common/resolvers/base.resolver';
+import { AuthUser } from 'src/common/types/auth-user';
+import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { UserRole } from 'src/user/user.types';
+
+import { OrderType } from 'src/order/order.types';
+import { OrderService } from 'src/order/order.service';
+import { Order } from 'src/order/order.entity';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { idParamSchema } from 'src/common/types/id-param.static';
+
+@Resolver(() => InvoiceType)
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class InvoiceResolver extends BaseResolver<
   Invoice,
-  CreateInvoiceDto,
-  UpdateInvoiceDto
+  CreateInvoiceInput,
+  UpdateInvoiceInput
 > {
-  constructor(private readonly invoiceService: InvoiceService) {
+  constructor(
+    private readonly invoiceService: InvoiceService,
+    private readonly orderService: OrderService,
+  ) {
     super(invoiceService);
   }
 
-  @CustomMessage('Invoices retrieved successfully')
-  @Get()
-  @ApiOperation({ summary: "Get all invoices for the current user's company" })
-  findAll(@CurrentUser() user: AuthUser) {
+  @Query(() => [InvoiceType], { name: 'getAllInvoices' })
+  override findAll(@CurrentUser() user: AuthUser) {
     return super.findAll(user);
   }
 
-  @CustomMessage('Invoice retrieved successfully')
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a single invoice by ID' })
-  @ApiParam({ name: 'id', description: 'Invoice UUID' })
-  findOne(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  @Query(() => InvoiceType, { nullable: true, name: 'getInvoiceById' })
+  override findOne(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.findOne(params, user);
+    return super.findOne(id, user);
   }
 
-  @CustomMessage('Invoice created successfully')
-  @Post()
+  @Mutation(() => InvoiceType, { name: 'createInvoice' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Create a new invoice' })
-  @ApiBody({
-    type: CreateInvoiceDto,
-    description: 'Fields required to create an invoice',
-    examples: {
-      minimal: {
-        value: { orderId: '', invoiceNumber: '', status: '', date: '' },
-      },
-    },
-  })
-  create(
-    @Body(new ZodValidationPipe(createInvoiceSchema)) dto: CreateInvoiceDto,
+  override create(
+    @Args('input', new ZodValidationPipe(createInvoiceSchema))
+    input: CreateInvoiceInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.create(dto, user);
+    return super.create(input, user);
   }
 
-  @CustomMessage('Invoice updated successfully')
-  @Put(':id')
+  @Mutation(() => InvoiceType, { name: 'updateInvoice' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Update an invoice by ID' })
-  @ApiParam({ name: 'id', description: 'Invoice UUID' })
-  @ApiBody({
-    type: UpdateInvoiceDto,
-    description: 'Fields to update an invoice',
-    examples: {
-      empty: {
-        value: { orderId: '', invoiceNumber: '', status: '', date: '' },
-      },
-    },
-  })
-  update(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @Body(new ZodValidationPipe(updateInvoiceSchema)) dto: UpdateInvoiceDto,
+  override update(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @Args('input', new ZodValidationPipe(updateInvoiceSchema))
+    input: UpdateInvoiceInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.update(params, dto, user);
+    return super.update(id, input, user);
   }
 
-  @CustomMessage('Invoice soft-deleted successfully')
-  @Delete(':id')
+  @Mutation(() => Boolean, { name: 'softDeleteInvoice' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Soft delete an invoice by ID' })
-  @ApiParam({ name: 'id', description: 'Invoice UUID' })
-  softDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override softDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.softDelete(params, user);
+    return super.softDelete(id, user);
   }
 
-  @CustomMessage('Invoice permanently deleted')
-  @Delete(':id/hard')
+  @Mutation(() => Boolean, { name: 'hardDeleteInvoice' })
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Permanently delete an invoice by ID' })
-  @ApiParam({ name: 'id', description: 'Invoice UUID' })
-  hardDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override hardDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.hardDelete(params, user);
+    return super.hardDelete(id, user);
+  }
+
+  @ResolveField(() => OrderType)
+  async order(
+    @Parent() invoice: Invoice,
+    @CurrentUser() user: AuthUser,
+  ): Promise<Order | null> {
+    return this.orderService.findOne(invoice.orderId, user.companyId);
   }
 }

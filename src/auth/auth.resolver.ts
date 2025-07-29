@@ -1,84 +1,50 @@
-import { Body, Controller, HttpCode, Post, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { Resolver, Mutation, Args } from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+
 import { AuthService } from './auth.service';
+import {
+  RegisterInput,
+  LoginInput,
+  RegisterUserToCompanyInput,
+  AuthPayloadType,
+  MessagePayload,
+  registerSchema,
+  loginSchema,
+  registerUserToCompanySchema,
+} from './auth.types';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { Roles } from './decorators/roles.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
-import { Roles } from './decorators/roles.decorator';
-
-import { LoginDto, RegisterDto, RegisterUserToCompanyDto } from './auth.types';
-import { ZodValidationPipe } from 'nestjs-zod';
 import { UserRole } from 'src/user/user.types';
 
-@ApiTags('Auth')
-@Controller('auth')
+@Resolver()
 export class AuthResolver {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('register')
-  @ApiOperation({ summary: 'Register a new company and owner user' })
-  @ApiBody({
-    type: RegisterDto,
-    examples: {
-      example: {
-        summary: 'Basic registration',
-        value: {
-          companyName: '',
-          companyEmail: '',
-          fullName: ' ',
-          email: '',
-          password: '',
-        },
-      },
-    },
-  })
-  async register(@Body(new ZodValidationPipe(RegisterDto)) dto: RegisterDto) {
-    return this.authService.register(dto);
+  @Mutation(() => AuthPayloadType)
+  async register(
+    @Args('input', new ZodValidationPipe(registerSchema))
+    input: RegisterInput,
+  ) {
+    return this.authService.register(input);
   }
 
-  @Post('login')
-  @HttpCode(200)
-  @ApiOperation({ summary: 'Login with email and password' })
-  @ApiBody({
-    type: LoginDto,
-    examples: {
-      example: {
-        summary: 'Basic login',
-        value: {
-          email: '',
-          password: '',
-        },
-      },
-    },
-  })
-  async login(@Body(new ZodValidationPipe(LoginDto)) dto: LoginDto) {
-    return this.authService.login(dto);
+  @Mutation(() => AuthPayloadType)
+  async login(
+    @Args('input', new ZodValidationPipe(loginSchema))
+    input: LoginInput,
+  ) {
+    return this.authService.login(input);
   }
 
-  @ApiBearerAuth()
+  @Mutation(() => MessagePayload)
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
-  @Post('register-user')
-  @ApiOperation({
-    summary: 'Register a user to an existing company (default: viewer)',
-  })
-  @ApiBody({
-    type: RegisterUserToCompanyDto,
-    examples: {
-      example: {
-        summary: 'Register viewer user',
-        value: {
-          companyId: '',
-          fullName: '',
-          email: '',
-          password: '',
-        },
-      },
-    },
-  })
   async registerUser(
-    @Body(new ZodValidationPipe(RegisterUserToCompanyDto))
-    dto: RegisterUserToCompanyDto,
+    @Args('input', new ZodValidationPipe(registerUserToCompanySchema))
+    input: RegisterUserToCompanyInput,
   ) {
-    return this.authService.registerUserToCompany(dto);
+    return this.authService.registerUserToCompany(input);
   }
 }

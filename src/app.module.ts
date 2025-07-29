@@ -1,9 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { GraphQLModule } from '@nestjs/graphql';
+import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { Request } from 'express';
 
 import { ConfigModule } from './config/config.module';
 import { ConfigService } from './config/config.service';
+
 import { AuthModule } from './auth/auth.module';
 import { CompanyModule } from './company/company.module';
 import { UserModule } from './user/user.module';
@@ -33,6 +37,13 @@ import { InvoiceModule } from './invoice/invoice.module';
         namingStrategy: new SnakeNamingStrategy(),
       }),
     }),
+
+    GraphQLModule.forRoot<ApolloDriverConfig>({
+      driver: ApolloDriver,
+      autoSchemaFile: './schema.gql',
+      context: ({ req }: { req: Request }) => ({ req }),
+    }),
+
     AuthModule,
     CompanyModule,
     UserModule,

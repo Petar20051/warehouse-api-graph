@@ -5,8 +5,9 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { GqlExecutionContext } from '@nestjs/graphql';
 import { AuthRequest } from 'src/common/types/auth-request';
-import { UserRole } from 'src/entities/user/user.static';
+import { UserRole } from 'src/user/user.types';
 
 @Injectable()
 export class RolesGuard implements CanActivate {
@@ -20,7 +21,8 @@ export class RolesGuard implements CanActivate {
 
     if (!requiredRoles) return true;
 
-    const req = context.switchToHttp().getRequest<AuthRequest>();
+    const ctx = GqlExecutionContext.create(context);
+    const req = ctx.getContext<{ req: AuthRequest }>().req;
     const user = req.user;
 
     if (!user || !requiredRoles.includes(user.role)) {

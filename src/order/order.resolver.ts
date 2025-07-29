@@ -1,147 +1,132 @@
 import {
-  Controller,
-  Body,
-  Param,
-  Delete,
-  Post,
-  Get,
-  Put,
-} from '@nestjs/common';
-import { Order } from './order.entity';
-import { OrderService } from './order.service';
+  Resolver,
+  ResolveField,
+  Parent,
+  Query,
+  Mutation,
+  Args,
+} from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
+
 import {
-  CreateOrderDto,
+  OrderType,
+  CreateOrderInput,
+  UpdateOrderInput,
   createOrderSchema,
-  CreateOrderWithItemsDto,
-  createOrderWithItemsSchema,
-  UpdateOrderDto,
   updateOrderSchema,
 } from './order.types';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { IdParamDto, idParamSchema } from 'src/common/types/id-param.static';
-import { AuthUser } from 'src/common/types/auth-user';
-import {
-  ApiBearerAuth,
-  ApiBody,
-  ApiOperation,
-  ApiParam,
-  ApiTags,
-} from '@nestjs/swagger';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserRole } from '../user/user.types';
-import { CustomMessage } from 'src/common/decorators/custom-message.decorator';
-import { BaseController } from 'src/common/controller/base.controller';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { Order } from './order.entity';
+import { OrderService } from './order.service';
 
-@ApiTags('Orders')
-@ApiBearerAuth('Authorization')
-@Controller('orders')
-export class OrderResolver extends BaseController<Order> {
-  constructor(private readonly orderService: OrderService) {
+import { BaseResolver } from 'src/common/resolvers/base.resolver';
+import { AuthUser } from 'src/common/types/auth-user';
+import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { UserRole } from 'src/user/user.types';
+
+import { WarehouseService } from 'src/warehouse/warehouse.service';
+import { PartnerService } from 'src/partner/partner.service';
+import { OrderItemService } from 'src/orderItem/orderItem.service';
+import { InvoiceService } from 'src/invoice/invoice.service';
+
+import { WarehouseType } from 'src/warehouse/warehouse.types';
+import { PartnerType } from 'src/partner/partner.types';
+import { OrderItemType } from 'src/orderItem/orderItem.types';
+import { InvoiceType } from 'src/invoice/invoice.types';
+
+import { Invoice } from 'src/invoice/invoice.entity';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { idParamSchema } from 'src/common/types/id-param.static';
+
+@Resolver(() => OrderType)
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class OrderResolver extends BaseResolver<
+  Order,
+  CreateOrderInput,
+  UpdateOrderInput
+> {
+  constructor(
+    private readonly orderService: OrderService,
+    private readonly warehouseService: WarehouseService,
+    private readonly partnerService: PartnerService,
+    private readonly orderItemService: OrderItemService,
+    private readonly invoiceService: InvoiceService,
+  ) {
     super(orderService);
   }
 
-  @CustomMessage('Orders retrieved successfully')
-  @Get()
-  @ApiOperation({ summary: "Get all orders for the current user's company" })
-  findAll(@CurrentUser() user: AuthUser) {
+  @Query(() => [OrderType], { name: 'getAllOrders' })
+  override findAll(@CurrentUser() user: AuthUser) {
     return super.findAll(user);
   }
 
-  @CustomMessage('Order retrieved successfully')
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a single order by ID' })
-  @ApiParam({ name: 'id', description: 'Order UUID' })
-  findOne(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  @Query(() => OrderType, { nullable: true, name: 'getOrderById' })
+  override findOne(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.findOne(params, user);
+    return super.findOne(id, user);
   }
 
-  @CustomMessage('Order created successfully')
-  @Post()
+  @Mutation(() => OrderType, { name: 'createOrder' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Create a new order' })
-  @ApiBody({
-    type: CreateOrderDto,
-    description: 'Fields required to create an order',
-    examples: {
-      minimal: {
-        value: {
-          warehouseId: '',
-          partnerID: '',
-          orderType: '',
-          notes: '',
-          date: '',
-        },
-      },
-    },
-  })
   override create(
-    @Body(new ZodValidationPipe(createOrderSchema)) dto: CreateOrderDto,
+    @Args('input', new ZodValidationPipe(createOrderSchema))
+    input: CreateOrderInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.create(dto, user);
+    return super.create(input, user);
   }
 
-  @CustomMessage('Order updated successfully')
-  @Put(':id')
+  @Mutation(() => OrderType, { name: 'updateOrder' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Update an order by ID' })
-  @ApiParam({ name: 'id', description: 'Order UUID' })
-  @ApiBody({
-    type: UpdateOrderDto,
-    description: 'Fields to update an order',
-    examples: {
-      empty: { value: { warehouseId: '', orderType: '', notes: '', date: '' } },
-    },
-  })
-  update(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @Body(new ZodValidationPipe(updateOrderSchema)) dto: UpdateOrderDto,
+  override update(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @Args('input', new ZodValidationPipe(updateOrderSchema))
+    input: UpdateOrderInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.update(params, dto, user);
+    return super.update(id, input, user);
   }
 
-  @CustomMessage('Order soft-deleted successfully')
-  @Delete(':id')
+  @Mutation(() => Boolean, { name: 'softDeleteOrder' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Soft delete an order by ID' })
-  @ApiParam({ name: 'id', description: 'Order UUID' })
-  softDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override softDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.softDelete(params, user);
+    return super.softDelete(id, user);
   }
 
-  @CustomMessage('Order permanently deleted')
-  @Delete(':id/hard')
+  @Mutation(() => Boolean, { name: 'hardDeleteOrder' })
   @Roles(UserRole.OWNER)
-  @ApiOperation({ summary: 'Permanently delete an order by ID' })
-  @ApiParam({ name: 'id', description: 'Order UUID' })
-  hardDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override hardDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.hardDelete(params, user);
+    return super.hardDelete(id, user);
   }
 
-  @Post('full')
-  @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @CustomMessage('Order with items created successfully')
-  @ApiOperation({ summary: 'Create order with nested order items' })
-  @ApiBody({
-    type: CreateOrderWithItemsDto,
-    description: 'Full order creation with its items',
-  })
-  createFullOrder(
-    @Body(new ZodValidationPipe(createOrderWithItemsSchema))
-    dto: CreateOrderWithItemsDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return this.orderService.createFullOrder(dto, user);
+  @ResolveField(() => WarehouseType)
+  warehouse(@Parent() order: Order) {
+    return this.warehouseService.findOne(order.warehouseId, order.companyId);
+  }
+
+  @ResolveField(() => PartnerType, { nullable: true })
+  partner(@Parent() order: Order) {
+    if (!order.partnerId) return null;
+    return this.partnerService.findOne(order.partnerId, order.companyId);
+  }
+
+  @ResolveField(() => [OrderItemType], { nullable: 'itemsAndList' })
+  orderItems(@Parent() order: Order) {
+    return this.orderItemService.findByOrder(order.id);
+  }
+
+  @ResolveField(() => InvoiceType, { nullable: true })
+  async invoice(@Parent() order: Order): Promise<Invoice | null> {
+    return this.invoiceService.findByOrderId(order.id);
   }
 }

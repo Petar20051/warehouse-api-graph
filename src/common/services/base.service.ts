@@ -22,16 +22,12 @@ export class BaseService<
   constructor(protected readonly repo: Repository<TEntity>) {}
 
   async findAllByCompany(companyId: string): Promise<TEntity[]> {
-    return this.repo.find({
-      where: whereCompany<TEntity>(companyId),
-    });
+    return this.repo.find({ where: whereCompany<TEntity>(companyId) });
   }
 
   async findOne(id: string, companyId: string): Promise<TEntity | null> {
     const entity = await this.repo.findOne({ where: whereId<TEntity>(id) });
-
     this.assertCompanyAccess(entity, companyId);
-
     return entity;
   }
 
@@ -41,7 +37,7 @@ export class BaseService<
   ): Promise<TEntity> {
     const entity = this.repo.create({
       ...data,
-      company: { id: user.companyId },
+      companyId: user.companyId,
       modifiedByUserId: user.userId,
     } as DeepPartial<TEntity>);
 
@@ -54,7 +50,6 @@ export class BaseService<
     user: AuthUser,
   ): Promise<TEntity | null> {
     const entity = await this.repo.findOne({ where: whereId<TEntity>(id) });
-
     this.assertCompanyAccess(entity, user.companyId);
 
     const updated = this.repo.merge(entity!, {
@@ -67,7 +62,6 @@ export class BaseService<
 
   async softDelete(id: string, user: AuthUser): Promise<void> {
     const entity = await this.repo.findOne({ where: whereId<TEntity>(id) });
-
     this.assertCompanyAccess(entity, user.companyId);
 
     const updated = this.repo.merge(entity!, {
@@ -85,7 +79,6 @@ export class BaseService<
     });
 
     this.assertCompanyAccess(entity, companyId);
-
     await this.repo.delete(id);
   }
 

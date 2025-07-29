@@ -1,3 +1,21 @@
+import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { z } from 'zod';
+
+import { BaseObjectType } from 'src/common/types/base-object.type';
+import { OrderType } from 'src/order/order.types';
+import { ProductTypeEnum } from 'src/product/product.types';
+
+export const createWarehouseSchema = z.object({
+  name: z.string().min(2).max(64),
+  location: z.string().min(2).max(128),
+  supportedType: z.enum(['solid', 'liquid']),
+});
+
+export const updateWarehouseSchema = createWarehouseSchema.partial();
+
+export type CreateWarehouse = z.infer<typeof createWarehouseSchema>;
+export type UpdateWarehouse = z.infer<typeof updateWarehouseSchema>;
+
 export type WarehouseTopStock = {
   warehouseId: string;
   warehouseName: string;
@@ -6,33 +24,44 @@ export type WarehouseTopStock = {
   stock: string;
 };
 
-import { createZodDto } from 'nestjs-zod';
-import { z } from 'zod';
+@ObjectType()
+export class WarehouseType extends BaseObjectType {
+  @Field()
+  companyId!: string;
 
-export const createWarehouseSchema = z.object({
-  name: z
-    .string({
-      required_error: 'Warehouse name is required',
-      invalid_type_error: 'Warehouse name must be a string',
-    })
-    .min(2, 'Warehouse name must be at least 2 characters')
-    .max(64, 'Warehouse name must be at most 64 characters'),
+  @Field()
+  name!: string;
 
-  location: z
-    .string({
-      required_error: 'Location is required',
-      invalid_type_error: 'Location must be a string',
-    })
-    .min(2, 'Location must be at least 2 characters')
-    .max(128, 'Location must be at most 128 characters'),
+  @Field()
+  location!: string;
 
-  supportedType: z.enum(['solid', 'liquid'], {
-    required_error: 'Supported type is required',
-    invalid_type_error: 'Supported type must be either "solid" or "liquid"',
-  }),
-});
+  @Field(() => ProductTypeEnum)
+  supportedType!: ProductTypeEnum;
 
-export const updateWarehouseSchema = createWarehouseSchema.partial();
+  @Field(() => [OrderType], { nullable: 'itemsAndList' })
+  orders?: OrderType[];
+}
 
-export class CreateWarehouseDto extends createZodDto(createWarehouseSchema) {}
-export class UpdateWarehouseDto extends createZodDto(updateWarehouseSchema) {}
+@InputType()
+export class CreateWarehouseInput {
+  @Field()
+  name!: string;
+
+  @Field()
+  location!: string;
+
+  @Field(() => ProductTypeEnum)
+  supportedType!: ProductTypeEnum;
+}
+
+@InputType()
+export class UpdateWarehouseInput {
+  @Field({ nullable: true })
+  name?: string;
+
+  @Field({ nullable: true })
+  location?: string;
+
+  @Field(() => ProductTypeEnum, { nullable: true })
+  supportedType?: ProductTypeEnum;
+}

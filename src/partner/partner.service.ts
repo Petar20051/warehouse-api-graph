@@ -4,8 +4,9 @@ import { Repository } from 'typeorm';
 
 import { Partner } from './partner.entity';
 import { Order } from '../order/order.entity';
-import { TopCustomerResult } from './partner.types';
+
 import { BaseService } from 'src/common/services/base.service';
+import { TopCustomerResultType } from './partner.types';
 
 @Injectable()
 export class PartnerService extends BaseService<Partner> {
@@ -21,7 +22,7 @@ export class PartnerService extends BaseService<Partner> {
 
   async getTopCustomerByOrders(
     companyId: string,
-  ): Promise<TopCustomerResult | null> {
+  ): Promise<TopCustomerResultType | null> {
     const raw = await this.partnerRepo
       .createQueryBuilder('partner')
       .leftJoin('partner.orders', 'order')
@@ -34,8 +35,8 @@ export class PartnerService extends BaseService<Partner> {
       .groupBy('partner.id')
       .orderBy('COUNT(order.id)', 'DESC')
       .limit(1)
-      .getRawOne<TopCustomerResult>();
+      .getRawOne<TopCustomerResultType>();
 
-    return raw ?? null;
+    return raw || null;
   }
 }

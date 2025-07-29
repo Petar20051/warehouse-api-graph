@@ -1,5 +1,5 @@
+import { Field, InputType, ObjectType, ID } from '@nestjs/graphql';
 import { z } from 'zod';
-import { createZodDto } from 'nestjs-zod';
 
 export const jwtConstants = {
   secret: process.env.JWT_SECRET || 'supersecret',
@@ -16,15 +16,11 @@ export const registerSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
-export class RegisterDto extends createZodDto(registerSchema) {}
-export type RegisterInput = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
-export class LoginDto extends createZodDto(loginSchema) {}
-export type LoginInput = z.infer<typeof loginSchema>;
 
 export const registerUserToCompanySchema = z.object({
   companyId: z.string().uuid(),
@@ -32,9 +28,63 @@ export const registerUserToCompanySchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
-export class RegisterUserToCompanyDto extends createZodDto(
-  registerUserToCompanySchema,
-) {}
-export type RegisterUserToCompanyInput = z.infer<
+
+export type RegisterDto = z.infer<typeof registerSchema>;
+export type LoginDto = z.infer<typeof loginSchema>;
+export type RegisterUserToCompanyDto = z.infer<
   typeof registerUserToCompanySchema
 >;
+
+@InputType()
+export class RegisterInput {
+  @Field()
+  companyName!: string;
+
+  @Field()
+  companyEmail!: string;
+
+  @Field()
+  fullName!: string;
+
+  @Field()
+  email!: string;
+
+  @Field()
+  password!: string;
+}
+
+@InputType()
+export class LoginInput {
+  @Field()
+  email!: string;
+
+  @Field()
+  password!: string;
+}
+
+@InputType()
+export class RegisterUserToCompanyInput {
+  @Field(() => ID)
+  companyId!: string;
+
+  @Field()
+  fullName!: string;
+
+  @Field()
+  email!: string;
+
+  @Field()
+  password!: string;
+}
+
+@ObjectType()
+export class AuthPayloadType {
+  @Field()
+  accessToken!: string;
+}
+
+@ObjectType()
+export class MessagePayload {
+  @Field()
+  message!: string;
+}

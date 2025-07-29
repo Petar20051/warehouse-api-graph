@@ -1,14 +1,20 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Warehouse } from './warehouse.entity';
 import { WarehouseService } from './warehouse.service';
-import { WarehouseController } from './warehouse.resolver';
 import { OrderItem } from '../orderItem/orderItem.entity';
+import { WarehouseResolver } from './warehouse.resolver';
+import { WarehouseAuditResolver } from 'src/common/resolvers/audit-resolvers';
+import { OrderModule } from 'src/order/order.module';
+import { UserModule } from 'src/user/user.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Warehouse, OrderItem])],
-  providers: [WarehouseService],
-  controllers: [WarehouseController],
+  imports: [
+    TypeOrmModule.forFeature([Warehouse, OrderItem]),
+    forwardRef(() => OrderModule),
+    UserModule,
+  ],
+  providers: [WarehouseService, WarehouseResolver, WarehouseAuditResolver],
   exports: [WarehouseService],
 })
 export class WarehouseModule {}

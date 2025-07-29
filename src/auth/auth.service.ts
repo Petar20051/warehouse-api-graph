@@ -8,15 +8,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { User } from 'src/entities/user/user.entity';
-import { Company } from 'src/entities/company/company.entity';
-import { UserRole } from 'src/entities/user/user.static';
 import {
   AuthMessages,
   LoginDto,
   RegisterDto,
   RegisterUserToCompanyDto,
 } from './auth.types';
+import { User } from 'src/user/user.entity';
+import { Company } from 'src/company/company.entity';
+import { UserRole } from 'src/user/user.types';
 
 @Injectable()
 export class AuthService {

@@ -1,116 +1,133 @@
-import { Controller, Post, Delete, Body, Param, Put } from '@nestjs/common';
 import {
-  ApiTags,
-  ApiBearerAuth,
-  ApiOperation,
-  ApiBody,
-  ApiParam,
-} from '@nestjs/swagger';
-import { Company } from './company.entity';
-import { CompanyService } from './company.service';
-import { BaseController } from 'src/common/controller/base.controller';
+  Resolver,
+  ResolveField,
+  Parent,
+  Query,
+  Mutation,
+  Args,
+} from '@nestjs/graphql';
+import { UseGuards } from '@nestjs/common';
 import {
-  CreateCompanyDto,
+  CompanyType,
+  CreateCompanyInput,
   createCompanySchema,
-  UpdateCompanyDto,
+  UpdateCompanyInput,
   updateCompanySchema,
 } from './company.types';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { IdParamDto, idParamSchema } from 'src/common/types/id-param.static';
-
+import { Company } from './company.entity';
+import { CompanyService } from './company.service';
+import { BaseResolver } from 'src/common/resolvers/base.resolver';
 import { AuthUser } from 'src/common/types/auth-user';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserRole } from '../user/user.types';
-import { CustomMessage } from 'src/common/decorators/custom-message.decorator';
 import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { UserRole } from 'src/user/user.types';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
-@ApiTags('Companies')
-@ApiBearerAuth('Authorization')
-@Controller('companies')
-export class CompanyResolver extends BaseController<Company> {
-  constructor(private readonly companyService: CompanyService) {
+import { UserService } from 'src/user/user.service';
+import { ProductService } from 'src/product/product.service';
+import { WarehouseService } from 'src/warehouse/warehouse.service';
+import { PartnerService } from 'src/partner/partner.service';
+import { OrderService } from 'src/order/order.service';
+
+import { UserType } from 'src/user/user.types';
+import { ProductType } from 'src/product/product.types';
+import { WarehouseType } from 'src/warehouse/warehouse.types';
+import { PartnerType } from 'src/partner/partner.types';
+import { OrderType } from 'src/order/order.types';
+import { ZodValidationPipe } from 'nestjs-zod';
+import { idParamSchema } from 'src/common/types/id-param.static';
+
+@Resolver(() => CompanyType)
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class CompanyResolver extends BaseResolver<
+  Company,
+  CreateCompanyInput,
+  UpdateCompanyInput
+> {
+  constructor(
+    private readonly companyService: CompanyService,
+    private readonly userService: UserService,
+    private readonly productService: ProductService,
+    private readonly warehouseService: WarehouseService,
+    private readonly partnerService: PartnerService,
+    private readonly orderService: OrderService,
+  ) {
     super(companyService);
   }
 
-  /*@Get()
-  @ApiOperation({
-    summary: "Get all companies for the current user's companyId",
-  })
-  findAll(@CurrentUser() user: AuthUser) {
+  @Query(() => [CompanyType], { name: 'getAllCompanies' })
+  override findAll(@CurrentUser() user: AuthUser) {
     return super.findAll(user);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a single company by ID' })
-  @ApiParam({ name: 'id', description: 'Company UUID' })
-  findOne(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  @Query(() => CompanyType, { nullable: true, name: 'getCompanyById' })
+  override findOne(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.findOne(params, user);
-  }*/
-
-  @CustomMessage('Company created successfully')
-  @Post()
-  @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Create a new company' })
-  @ApiBody({
-    type: CreateCompanyDto,
-    description: 'Fields required to create a new company',
-    examples: {
-      minimal: { value: { name: '', email: '' } },
-    },
-  })
-  create(
-    @Body(new ZodValidationPipe(createCompanySchema)) dto: CreateCompanyDto,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return super.create(dto, user);
+    return super.findOne(id, user);
   }
 
-  @CustomMessage('Company updated successfully')
-  @Put(':id')
-  @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Update a company by ID' })
-  @ApiParam({ name: 'id', description: 'Company UUID' })
-  @ApiBody({
-    type: UpdateCompanyDto,
-    description: 'Fields to update an existing company',
-    examples: {
-      empty: { value: { name: '', email: '' } },
-    },
-  })
-  update(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
-    @Body(new ZodValidationPipe(updateCompanySchema)) dto: UpdateCompanyDto,
+  @Mutation(() => CompanyType, { name: 'createCompany' })
+  override create(
+    @Args('input', new ZodValidationPipe(createCompanySchema))
+    input: CreateCompanyInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.update(params, dto, user);
+    return super.create(input, user);
   }
 
-  @CustomMessage('Company soft-deleted successfully')
-  @Delete(':id')
-  @Roles(UserRole.OWNER, UserRole.OPERATOR)
-  @ApiOperation({ summary: 'Soft delete a company by ID (marks as deleted)' })
-  @ApiParam({ name: 'id', description: 'Company UUID' })
-  softDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  @Mutation(() => CompanyType, { name: 'updateCompany' })
+  override update(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @Args('input', new ZodValidationPipe(updateCompanySchema))
+    input: UpdateCompanyInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.softDelete(params, user);
+    return super.update(id, input, user);
   }
 
-  @CustomMessage('Company permanently deleted')
-  @Delete(':id/hard')
+  @Mutation(() => Boolean, { name: 'softDeleteCompany' })
+  @Roles(UserRole.OWNER, UserRole.OPERATOR)
+  override softDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
+    return super.softDelete(id, user);
+  }
+
+  @Mutation(() => Boolean, { name: 'hardDeleteCompany' })
   @Roles(UserRole.OWNER)
-  @ApiOperation({
-    summary: 'Permanently delete a company by ID (cannot be undone)',
-  })
-  @ApiParam({ name: 'id', description: 'Company UUID' })
-  hardDelete(
-    @Param(new ZodValidationPipe(idParamSchema)) params: IdParamDto,
+  override hardDelete(
+    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.hardDelete(params, user);
+    return super.hardDelete(id, user);
+  }
+
+  @ResolveField(() => [UserType], { nullable: 'itemsAndList' })
+  users(@Parent() company: Company) {
+    return this.userService.findAllByCompany(company.id);
+  }
+
+  @ResolveField(() => [ProductType], { nullable: 'itemsAndList' })
+  products(@Parent() company: Company) {
+    return this.productService.findAllByCompany(company.id);
+  }
+
+  @ResolveField(() => [WarehouseType], { nullable: 'itemsAndList' })
+  warehouses(@Parent() company: Company) {
+    return this.warehouseService.findAllByCompany(company.id);
+  }
+
+  @ResolveField(() => [PartnerType], { nullable: 'itemsAndList' })
+  partners(@Parent() company: Company) {
+    return this.partnerService.findAllByCompany(company.id);
+  }
+
+  @ResolveField(() => [OrderType], { nullable: 'itemsAndList' })
+  orders(@Parent() company: Company) {
+    return this.orderService.findAllByCompany(company.id);
   }
 }
