@@ -97,7 +97,10 @@ export class WarehouseResolver extends BaseResolver<
   }
 
   @ResolveField(() => [OrderType], { nullable: 'itemsAndList' })
-  orders(@Parent() warehouse: Warehouse): Promise<Order[]> {
-    return this.orderService.findByWarehouse(warehouse.id);
+  orders(
+    @Parent() warehouse: Warehouse,
+    @CurrentUser() user: AuthUser,
+  ): Promise<Order[]> {
+    return this.orderService.findByWarehouse(warehouse.id, user.companyId);
   }
 }

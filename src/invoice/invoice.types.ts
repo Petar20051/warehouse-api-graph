@@ -48,9 +48,6 @@ export class CreateInvoiceInput {
   @Field(() => ID)
   orderId!: string;
 
-  @Field()
-  invoiceNumber!: string;
-
   @Field(() => InvoiceStatus)
   status!: InvoiceStatus;
 

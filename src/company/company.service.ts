@@ -9,4 +9,10 @@ export class CompanyService extends BaseService<Company> {
   constructor(@InjectRepository(Company) repo: Repository<Company>) {
     super(repo);
   }
+
+  async findOneById(companyId: string): Promise<Company | null> {
+    return this.repo.findOne({
+      where: { id: companyId },
+    });
+  }
 }

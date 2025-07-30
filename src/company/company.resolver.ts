@@ -56,17 +56,14 @@ export class CompanyResolver extends BaseResolver<
     super(companyService);
   }
 
-  @Query(() => [CompanyType], { name: 'getAllCompanies' })
+  // @Query(() => [CompanyType], { name: 'getAllCompanies' })
   override findAll(@CurrentUser() user: AuthUser) {
     return super.findAll(user);
   }
 
-  @Query(() => CompanyType, { nullable: true, name: 'getCompanyById' })
-  override findOne(
-    @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
-  ) {
-    return super.findOne(id, user);
+  @Query(() => CompanyType, { nullable: true, name: 'getCompanyInfo' })
+  async getCompanyInfo(@CurrentUser() user: AuthUser) {
+    return this.companyService.findOneById(user.companyId);
   }
 
   @Mutation(() => CompanyType, { name: 'createCompany' })

@@ -97,7 +97,10 @@ export class PartnerResolver extends BaseResolver<
   }
 
   @ResolveField(() => [OrderType], { nullable: 'itemsAndList' })
-  orders(@Parent() partner: Partner): Promise<Order[]> {
-    return this.orderService.findByPartner(partner.id);
+  orders(
+    @Parent() partner: Partner,
+    @CurrentUser() user: AuthUser,
+  ): Promise<Order[]> {
+    return this.orderService.findByPartner(partner.id, user.companyId);
   }
 }

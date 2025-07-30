@@ -41,7 +41,7 @@ export class UserResolver extends BaseResolver<
     return super.findOne(id, user);
   }
 
-  @Mutation(() => UserType, { name: 'createUser' })
+  //@Mutation(() => UserType, { name: 'createUser' })
   @Roles(UserRole.OWNER)
   override create(
     @Args('input', new ZodValidationPipe(createUserSchema))

@@ -166,8 +166,7 @@ type CompanyType {
 }
 
 type Query {
-  getAllCompanies: [CompanyType!]!
-  getCompanyById(id: String!): CompanyType
+  getCompanyInfo: CompanyType
   getAllUsers: [UserType!]!
   getUserById(id: String!): UserType
   getAllProducts: [ProductType!]!
@@ -192,7 +191,6 @@ type Mutation {
   updateCompany(id: String!, input: UpdateCompanyInput!): CompanyType!
   softDeleteCompany(id: String!): Boolean!
   hardDeleteCompany(id: String!): Boolean!
-  createUser(input: CreateUserInput!): UserType!
   updateUser(id: String!, input: UpdateUserInput!): UserType!
   softDeleteUser(id: String!): Boolean!
   hardDeleteUser(id: String!): Boolean!
@@ -252,13 +250,6 @@ input UpdateCompanyInput {
   email: String
 }
 
-input CreateUserInput {
-  fullName: String!
-  email: String!
-  password: String!
-  role: UserRole!
-}
-
 input UpdateUserInput {
   fullName: String
   email: String
@@ -314,7 +305,6 @@ input UpdateOrderInput {
 
 input CreateInvoiceInput {
   orderId: ID!
-  invoiceNumber: String!
   status: InvoiceStatus!
   date: DateTime!
 }
