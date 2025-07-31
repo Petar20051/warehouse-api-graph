@@ -364,7 +364,13 @@ input CreateOrderWithItemsInput {
   partnerId: ID
   notes: String
   date: DateTime
-  orderItems: [CreateOrderItemInput!]!
+  orderItems: [CreateOrderItemInFullOrderInput!]!
+}
+
+input CreateOrderItemInFullOrderInput {
+  productId: ID!
+  unitPrice: Float!
+  quantity: Float!
 }
 
 input CreateInvoiceInput {

@@ -8,9 +8,6 @@ import { Repository } from 'typeorm';
 import { ForbiddenError } from 'apollo-server-express';
 
 import { Order } from './order.entity';
-import { Partner } from '../partner/partner.entity';
-import { Warehouse } from '../warehouse/warehouse.entity';
-
 import { BaseService } from 'src/common/services/base.service';
 import { AuthUser } from 'src/common/types/auth-user';
 import { InvoiceService } from '../invoice/invoice.service';
@@ -22,6 +19,8 @@ import {
   UpdateOrderInput,
 } from './order.types';
 import { OrderItemService } from 'src/orderItem/orderItem.service';
+import { WarehouseService } from '../warehouse/warehouse.service';
+import { PartnerService } from '../partner/partner.service';
 
 @Injectable()
 export class OrderService extends BaseService<Order> {
@@ -29,6 +28,8 @@ export class OrderService extends BaseService<Order> {
     @InjectRepository(Order) repo: Repository<Order>,
     private readonly invoiceService: InvoiceService,
     private readonly orderItemService: OrderItemService,
+    private readonly warehouseService: WarehouseService,
+    private readonly partnerService: PartnerService,
   ) {
     super(repo);
   }
@@ -51,7 +52,7 @@ export class OrderService extends BaseService<Order> {
   ): Promise<Order> {
     const { warehouseId, partnerId, orderType, notes, date } = dto;
 
-    await this.getWarehouseOrFail(warehouseId, user.companyId);
+    await this.warehouseService.findOne(warehouseId, user.companyId);
 
     if (partnerId) {
       await this.validatePartner(partnerId, orderType, user.companyId);
@@ -100,7 +101,7 @@ export class OrderService extends BaseService<Order> {
       date = existing.date,
     } = { ...existing, ...dto };
 
-    await this.getWarehouseOrFail(warehouseId, user.companyId);
+    await this.warehouseService.findOne(warehouseId, user.companyId);
 
     if (partnerId) {
       await this.validatePartner(partnerId, orderType, user.companyId);
@@ -136,22 +137,21 @@ export class OrderService extends BaseService<Order> {
       );
     }
 
-    const fromWarehouse = await this.getWarehouseOrFail(
+    const fromWarehouse = await this.warehouseService.findOne(
       fromWarehouseId,
       user.companyId,
-      'Source',
     );
-    const toWarehouse = await this.getWarehouseOrFail(
+
+    const toWarehouse = await this.warehouseService.findOne(
       toWarehouseId,
       user.companyId,
-      'Destination',
     );
 
     const shipment = await super.createWithUserContext(
       {
         warehouseId: fromWarehouseId,
         orderType: OrderTypeEnum.SHIPMENT,
-        notes: `Internal transfer to ${toWarehouse.name}`,
+        notes: `Internal transfer to ${toWarehouse?.name ?? 'unknown warehouse'}`,
         date: new Date(),
       },
       user,
@@ -171,7 +171,7 @@ export class OrderService extends BaseService<Order> {
       {
         warehouseId: toWarehouseId,
         orderType: OrderTypeEnum.DELIVERY,
-        notes: `Internal transfer from ${fromWarehouse.name}`,
+        notes: `Internal transfer from ${fromWarehouse?.name ?? 'unknown warehouse'}`,
         date: new Date(),
       },
       user,
@@ -220,34 +220,13 @@ export class OrderService extends BaseService<Order> {
     return this.findOne(order.id, user.companyId);
   }
 
-  private async getWarehouseOrFail(
-    warehouseId: string,
-    companyId: string,
-    label: 'Source' | 'Destination' = 'Source',
-  ): Promise<Warehouse> {
-    const warehouse = await this.repo.manager.findOne(Warehouse, {
-      where: { id: warehouseId, companyId },
-    });
-    if (!warehouse) {
-      throw new NotFoundException(
-        `${label} warehouse not found or unauthorized`,
-      );
-    }
-    return warehouse;
-  }
-
   private async validatePartner(
     partnerId: string,
     orderType: OrderTypeEnum,
     companyId: string,
-  ): Promise<Partner> {
-    const partner = await this.repo.manager.findOne(Partner, {
-      where: { id: partnerId, companyId },
-    });
-
-    if (!partner) {
-      throw new NotFoundException('Partner not found or unauthorized');
-    }
+  ) {
+    const partner = await this.partnerService.findOne(partnerId, companyId);
+    if (!partner) throw new NotFoundException('Partner not found');
 
     const valid =
       (orderType === OrderTypeEnum.SHIPMENT && partner.type === 'customer') ||
@@ -258,7 +237,5 @@ export class OrderService extends BaseService<Order> {
         `Invalid partner type for '${orderType}'. Shipment → customer, Delivery → supplier.`,
       );
     }
-
-    return partner;
   }
 }

@@ -9,8 +9,11 @@ interface GqlContext {
 }
 
 export const CurrentUser = createParamDecorator(
-  (data: undefined, ctx: ExecutionContext): AuthUser =>
-    GqlExecutionContext.create(ctx).getContext<GqlContext>().req.user,
+  (data: keyof AuthUser | undefined, ctx: ExecutionContext): any => {
+    const user =
+      GqlExecutionContext.create(ctx).getContext<GqlContext>().req.user;
+    return data ? user[data] : user;
+  },
 ) as {
   (): ParameterDecorator;
   <K extends keyof AuthUser>(data: K): ParameterDecorator;

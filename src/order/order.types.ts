@@ -9,7 +9,7 @@ import {
 } from '@nestjs/graphql';
 import { BaseObjectType } from 'src/common/types/base-object.type';
 import {
-  CreateOrderItemInput,
+  CreateOrderItemInFullOrderInput,
   OrderItemType,
 } from '../orderItem/orderItem.types';
 import { WarehouseType } from '../warehouse/warehouse.types';
@@ -139,6 +139,6 @@ export class CreateOrderWithItemsInput {
   @Field({ nullable: true })
   date?: Date;
 
-  @Field(() => [CreateOrderItemInput])
-  orderItems!: CreateOrderItemInput[];
+  @Field(() => [CreateOrderItemInFullOrderInput])
+  orderItems!: CreateOrderItemInFullOrderInput[];
 }

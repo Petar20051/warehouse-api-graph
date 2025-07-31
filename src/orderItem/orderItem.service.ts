@@ -117,7 +117,7 @@ export class OrderItemService extends BaseService<OrderItem> {
 
     const orderItems = await this.repo
       .createQueryBuilder('orderItem')
-      .innerJoin('orderItem.order', 'o')
+      .innerJoin('orders', 'o', 'o.id = orderItem.orderId')
       .where('orderItem.productId = :productId', { productId: dto.productId })
       .andWhere('o.warehouse_id = :warehouseId', {
         warehouseId: order.warehouseId,

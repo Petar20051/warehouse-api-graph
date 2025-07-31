@@ -11,10 +11,18 @@ import { CreateInvoiceInput, UpdateInvoiceInput } from './invoice.types';
 @Injectable()
 export class InvoiceService extends BaseService<Invoice> {
   constructor(
-    @InjectRepository(Invoice) repo: Repository<Invoice>,
+    @InjectRepository(Invoice) invoiceRepo: Repository<Invoice>,
     @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
   ) {
-    super(repo);
+    super(invoiceRepo);
+  }
+
+  async findAllByCompany(companyId: string): Promise<Invoice[]> {
+    return this.repo
+      .createQueryBuilder('invoice')
+      .innerJoin('orders', 'o', 'invoice.order_id = o.id')
+      .where('o.company_id = :companyId', { companyId })
+      .getMany();
   }
 
   async findByOrderId(orderId: string): Promise<Invoice | null> {

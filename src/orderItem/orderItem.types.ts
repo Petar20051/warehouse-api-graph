@@ -57,6 +57,18 @@ export class CreateOrderItemInput {
 }
 
 @InputType()
+export class CreateOrderItemInFullOrderInput {
+  @Field(() => ID)
+  productId!: string;
+
+  @Field(() => Float)
+  unitPrice!: number;
+
+  @Field(() => Float)
+  quantity!: number;
+}
+
+@InputType()
 export class UpdateOrderItemInput {
   @Field(() => ID, { nullable: true })
   orderId?: string;
