@@ -9,4 +9,25 @@ export class UserService extends BaseService<User> {
   constructor(@InjectRepository(User) repo: Repository<User>) {
     super(repo);
   }
+
+  findByEmail(email: string): Promise<User | null> {
+    return this.repo.findOne({ where: { email } });
+  }
+
+  findById(id: string): Promise<User | null> {
+    return this.repo.findOne({ where: { id } });
+  }
+
+  findOneByIdAndCompany(id: string, companyId: string): Promise<User | null> {
+    return this.repo.findOne({ where: { id, companyId } });
+  }
+
+  create(data: Partial<User>): Promise<User> {
+    const entity = this.repo.create(data);
+    return this.repo.save(entity);
+  }
+
+  async update(id: string, data: Partial<User>): Promise<void> {
+    await this.repo.update(id, data);
+  }
 }

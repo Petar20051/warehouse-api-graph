@@ -1,18 +1,25 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Invoice } from './invoice.entity';
-import { Order } from 'src/order/order.entity';
 import { BaseService } from 'src/common/services/base.service';
 import { AuthUser } from 'src/common/types/auth-user';
 import { CreateInvoiceInput, UpdateInvoiceInput } from './invoice.types';
+import { OrderService } from 'src/order/order.service';
 
 @Injectable()
 export class InvoiceService extends BaseService<Invoice> {
   constructor(
-    @InjectRepository(Invoice) invoiceRepo: Repository<Invoice>,
-    @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
+    @InjectRepository(Invoice)
+    invoiceRepo: Repository<Invoice>,
+    @Inject(forwardRef(() => OrderService))
+    private readonly orderService: OrderService,
   ) {
     super(invoiceRepo);
   }
@@ -25,6 +32,18 @@ export class InvoiceService extends BaseService<Invoice> {
       .getMany();
   }
 
+  override async findOne(
+    id: string,
+    companyId: string,
+  ): Promise<Invoice | null> {
+    return this.repo
+      .createQueryBuilder('invoice')
+      .innerJoin('orders', 'o', 'invoice.order_id = o.id')
+      .where('invoice.id = :id', { id })
+      .andWhere('o.company_id = :companyId', { companyId })
+      .getOne();
+  }
+
   async findByOrderId(orderId: string): Promise<Invoice | null> {
     return this.repo.findOne({ where: { orderId } });
   }
@@ -33,24 +52,21 @@ export class InvoiceService extends BaseService<Invoice> {
     dto: CreateInvoiceInput,
     user: AuthUser,
   ): Promise<Invoice> {
-    const order = await this.orderRepo.findOne({
-      where: { id: dto.orderId, companyId: user.companyId },
-    });
-
+    const order = await this.orderService.findOne(dto.orderId, user.companyId);
     if (!order) {
       throw new ForbiddenException(
         'Order not found or does not belong to your company',
       );
     }
 
-    const entity: Partial<Invoice> = {
+    const invoice = this.repo.create({
       orderId: dto.orderId,
       status: dto.status,
       date: dto.date,
       modifiedByUserId: user.userId,
-    };
+    });
 
-    return this.repo.save(this.repo.create(entity));
+    return this.repo.save(invoice);
   }
 
   override async updateWithUserContext(
@@ -61,10 +77,10 @@ export class InvoiceService extends BaseService<Invoice> {
     const existing = await this.repo.findOne({ where: { id } });
     if (!existing) throw new ForbiddenException('Invoice not found');
 
-    const order = await this.orderRepo.findOne({
-      where: { id: existing.orderId, companyId: user.companyId },
-    });
-
+    const order = await this.orderService.findOne(
+      existing.orderId,
+      user.companyId,
+    );
     if (!order) {
       throw new ForbiddenException(
         'Associated order not found or access denied',

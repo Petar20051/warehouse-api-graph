@@ -28,6 +28,7 @@ export class PartnerService extends BaseService<Partner> {
       .where('partner.company_id = :companyId', { companyId })
       .andWhere('partner.type = :type', { type: 'customer' })
       .andWhere('orders.deleted_at IS NULL')
+      .andWhere('partner.deleted_at IS NULL')
       .groupBy('partner.id')
       .orderBy('COUNT(orders.id)', 'DESC')
       .limit(1)

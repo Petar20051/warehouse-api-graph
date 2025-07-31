@@ -21,6 +21,7 @@ import {
 import { OrderItemService } from 'src/orderItem/orderItem.service';
 import { WarehouseService } from '../warehouse/warehouse.service';
 import { PartnerService } from '../partner/partner.service';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class OrderService extends BaseService<Order> {
@@ -30,6 +31,7 @@ export class OrderService extends BaseService<Order> {
     private readonly orderItemService: OrderItemService,
     private readonly warehouseService: WarehouseService,
     private readonly partnerService: PartnerService,
+    private readonly dataSource: DataSource,
   ) {
     super(repo);
   }
@@ -101,10 +103,12 @@ export class OrderService extends BaseService<Order> {
       date = existing.date,
     } = { ...existing, ...dto };
 
-    await this.warehouseService.findOne(warehouseId, user.companyId);
+    if (dto.warehouseId && dto.warehouseId !== existing.warehouseId) {
+      await this.warehouseService.findOne(dto.warehouseId, user.companyId);
+    }
 
-    if (partnerId) {
-      await this.validatePartner(partnerId, orderType, user.companyId);
+    if (dto.partnerId && dto.partnerId !== existing.partnerId) {
+      await this.validatePartner(dto.partnerId, orderType, user.companyId);
     }
 
     Object.assign(existing, {
@@ -137,57 +141,58 @@ export class OrderService extends BaseService<Order> {
       );
     }
 
-    const fromWarehouse = await this.warehouseService.findOne(
-      fromWarehouseId,
-      user.companyId,
-    );
+    return this.dataSource.transaction(async () => {
+      const fromWarehouse = await this.warehouseService.findOne(
+        fromWarehouseId,
+        user.companyId,
+      );
+      const toWarehouse = await this.warehouseService.findOne(
+        toWarehouseId,
+        user.companyId,
+      );
 
-    const toWarehouse = await this.warehouseService.findOne(
-      toWarehouseId,
-      user.companyId,
-    );
+      const shipment = await this.createWithUserContext(
+        {
+          warehouseId: fromWarehouseId,
+          orderType: OrderTypeEnum.SHIPMENT,
+          notes: `Internal transfer to ${toWarehouse?.name ?? 'unknown warehouse'}`,
+          date: new Date(),
+        },
+        user,
+      );
 
-    const shipment = await super.createWithUserContext(
-      {
-        warehouseId: fromWarehouseId,
-        orderType: OrderTypeEnum.SHIPMENT,
-        notes: `Internal transfer to ${toWarehouse?.name ?? 'unknown warehouse'}`,
-        date: new Date(),
-      },
-      user,
-    );
+      await this.orderItemService.createWithUserContext(
+        {
+          orderId: shipment.id,
+          productId,
+          quantity,
+          unitPrice: 0,
+        },
+        user,
+      );
 
-    await this.orderItemService.createWithUserContext(
-      {
-        orderId: shipment.id,
-        productId,
-        quantity,
-        unitPrice: 0,
-      },
-      user,
-    );
+      const delivery = await this.createWithUserContext(
+        {
+          warehouseId: toWarehouseId,
+          orderType: OrderTypeEnum.DELIVERY,
+          notes: `Internal transfer from ${fromWarehouse?.name ?? 'unknown warehouse'}`,
+          date: new Date(),
+        },
+        user,
+      );
 
-    const delivery = await super.createWithUserContext(
-      {
-        warehouseId: toWarehouseId,
-        orderType: OrderTypeEnum.DELIVERY,
-        notes: `Internal transfer from ${fromWarehouse?.name ?? 'unknown warehouse'}`,
-        date: new Date(),
-      },
-      user,
-    );
+      await this.orderItemService.createWithUserContext(
+        {
+          orderId: delivery.id,
+          productId,
+          quantity,
+          unitPrice: 0,
+        },
+        user,
+      );
 
-    await this.orderItemService.createWithUserContext(
-      {
-        orderId: delivery.id,
-        productId,
-        quantity,
-        unitPrice: 0,
-      },
-      user,
-    );
-
-    return { shipmentId: shipment.id, deliveryId: delivery.id };
+      return { shipmentId: shipment.id, deliveryId: delivery.id };
+    });
   }
 
   async createFullOrder(

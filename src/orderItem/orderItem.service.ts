@@ -1,30 +1,50 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ForbiddenException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository } from 'typeorm';
 import { ApolloError, UserInputError } from 'apollo-server-core';
 
 import { OrderItem } from './orderItem.entity';
-import { Order } from '../order/order.entity';
-import { Product } from '../product/product.entity';
-import { Warehouse } from '../warehouse/warehouse.entity';
-
 import { BaseService } from 'src/common/services/base.service';
 import { AuthUser } from 'src/common/types/auth-user';
 import { CreateOrderItem, UpdateOrderItem } from './orderItem.types';
 import { OrderTypeEnum } from 'src/order/order.types';
 
+import { OrderService } from 'src/order/order.service';
+import { ProductService } from 'src/product/product.service';
+import { WarehouseService } from 'src/warehouse/warehouse.service';
+
 @Injectable()
 export class OrderItemService extends BaseService<OrderItem> {
   constructor(
     @InjectRepository(OrderItem) repo: Repository<OrderItem>,
-    @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
-    @InjectRepository(Product)
-    private readonly productRepo: Repository<Product>,
-    @InjectRepository(Warehouse)
-    private readonly warehouseRepo: Repository<Warehouse>,
-    private readonly dataSource: DataSource,
+    @Inject(forwardRef(() => OrderService))
+    private readonly orderService: OrderService,
+    private readonly productService: ProductService,
+    private readonly warehouseService: WarehouseService,
   ) {
     super(repo);
+  }
+
+  async findAllByCompany(companyId: string): Promise<OrderItem[]> {
+    return this.repo
+      .createQueryBuilder('orderItem')
+      .innerJoin('orders', 'o', 'orderItem.order_id = o.id')
+      .where('o.company_id = :companyId', { companyId })
+      .getMany();
+  }
+
+  async findOne(id: string, companyId: string): Promise<OrderItem | null> {
+    return this.repo
+      .createQueryBuilder('orderItem')
+      .innerJoin('orders', 'o', 'orderItem.order_id = o.id')
+      .where('o.company_id = :companyId', { companyId })
+      .andWhere('orderItem.id = :id', { id })
+      .getOne();
   }
 
   async findByOrder(orderId: string) {
@@ -82,16 +102,17 @@ export class OrderItemService extends BaseService<OrderItem> {
     if (!dto.orderId || !dto.productId) return;
 
     const [order, product] = await Promise.all([
-      this.orderRepo.findOne({ where: { id: dto.orderId, companyId } }),
-      this.productRepo.findOne({ where: { id: dto.productId, companyId } }),
+      this.orderService.findOne(dto.orderId, companyId),
+      this.productService.findOne(dto.productId, companyId),
     ]);
 
     if (!order) throw new UserInputError('Order not found');
     if (!product) throw new UserInputError('Product not found');
 
-    const warehouse = await this.warehouseRepo.findOne({
-      where: { id: order.warehouseId, companyId },
-    });
+    const warehouse = await this.warehouseService.findOne(
+      order.warehouseId,
+      companyId,
+    );
     if (!warehouse) throw new UserInputError('Warehouse not found');
 
     if (warehouse.supportedType !== product.productType) {
@@ -109,9 +130,7 @@ export class OrderItemService extends BaseService<OrderItem> {
     if (!dto.orderId || !dto.productId || typeof dto.quantity !== 'number')
       return;
 
-    const order = await this.orderRepo.findOne({
-      where: { id: dto.orderId, companyId },
-    });
+    const order = await this.orderService.findOne(dto.orderId, companyId);
     if (!order) throw new UserInputError('Order not found');
     if (order.orderType !== OrderTypeEnum.SHIPMENT) return;
 
@@ -127,12 +146,14 @@ export class OrderItemService extends BaseService<OrderItem> {
       .getMany();
 
     let availableStock = 0;
+
     for (const item of orderItems) {
       if (item.orderId === order.id) continue;
 
-      const itemOrder = await this.orderRepo.findOne({
-        where: { id: item.orderId, companyId },
-      });
+      const itemOrder = await this.orderService.findOne(
+        item.orderId,
+        companyId,
+      );
       if (!itemOrder) continue;
 
       availableStock +=

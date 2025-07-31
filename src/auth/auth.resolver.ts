@@ -32,25 +32,27 @@ export class AuthResolver {
 
   @Mutation(() => AuthPayloadType, { name: 'RegisterUserAndCompany' })
   async register(
-    @Args('input', new ZodValidationPipe(registerSchema)) input: RegisterInput,
-  ) {
+    @Args('input', new ZodValidationPipe(registerSchema))
+    input: RegisterInput,
+  ): Promise<AuthPayloadType> {
     return this.authService.register(input);
   }
 
   @Mutation(() => AuthPayloadType, { name: 'Login' })
   async login(
-    @Args('input', new ZodValidationPipe(loginSchema)) input: LoginInput,
-  ) {
+    @Args('input', new ZodValidationPipe(loginSchema))
+    input: LoginInput,
+  ): Promise<AuthPayloadType> {
     return this.authService.login(input);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER)
   @Mutation(() => MessagePayload, { name: 'RegisterUserToCompany' })
-  async registerUser(
+  async registerUserToCompany(
     @Args('input', new ZodValidationPipe(registerUserToCompanySchema))
     input: RegisterUserToCompanyInput,
-  ) {
+  ): Promise<MessagePayload> {
     return this.authService.registerUserToCompany(input);
   }
 
@@ -60,7 +62,7 @@ export class AuthResolver {
     @Args('input', new ZodValidationPipe(changePasswordSchema))
     input: ChangePasswordInput,
     @CurrentUser('userId') userId: string,
-  ) {
+  ): Promise<MessagePayload> {
     return this.authService.changePassword(userId, input);
   }
 
@@ -71,7 +73,7 @@ export class AuthResolver {
     @Args('input', new ZodValidationPipe(changeUserRoleSchema))
     input: ChangeUserRoleInput,
     @CurrentUser() currentUser: AuthUser,
-  ) {
+  ): Promise<MessagePayload> {
     return this.authService.changeUserRole(input, currentUser);
   }
 }

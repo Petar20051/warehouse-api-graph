@@ -13,4 +13,13 @@ export class CompanyService extends BaseService<Company> {
   findOneById(id: string): Promise<Company | null> {
     return this.repo.findOne({ where: { id } });
   }
+
+  create(data: Partial<Company>): Promise<Company> {
+    const entity = this.repo.create(data);
+    return this.repo.save(entity);
+  }
+
+  async update(id: string, data: Partial<Company>): Promise<void> {
+    await this.repo.update(id, data);
+  }
 }

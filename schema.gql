@@ -188,9 +188,9 @@ type CompanyType {
 }
 
 type Query {
-  getCompanyInfo: CompanyType
   getAllUsers: [UserType!]!
   getUserById(id: String!): UserType
+  getCompanyInfo: CompanyType
   getAllProducts: [ProductType!]!
   getProductById(id: String!): ProductType
   getBestSellingProducts: [BestSellingProductType!]!
@@ -215,14 +215,14 @@ type Mutation {
   RegisterUserToCompany(input: RegisterUserToCompanyInput!): MessagePayload!
   ChangePassword(input: ChangePasswordInput!): MessagePayload!
   ChangeUserRole(input: ChangeUserRoleInput!): MessagePayload!
-  createCompany(input: CreateCompanyInput!): CompanyType!
-  updateCompany(id: String!, input: UpdateCompanyInput!): CompanyType!
-  softDeleteCompany(id: String!): Boolean!
-  hardDeleteCompany(id: String!): Boolean!
   createUser(input: CreateUserInput!): UserType!
   updateUser(id: String!, input: UpdateUserInput!): UserType!
   softDeleteUser(id: String!): Boolean!
   hardDeleteUser(id: String!): Boolean!
+  createCompany(input: CreateCompanyInput!): CompanyType!
+  updateCompany(id: String!, input: UpdateCompanyInput!): CompanyType!
+  softDeleteCompany(id: String!): Boolean!
+  hardDeleteCompany(id: String!): Boolean!
   createProduct(input: CreateProductInput!): ProductType!
   updateProduct(id: String!, input: UpdateProductInput!): ProductType!
   softDeleteProduct(id: String!): Boolean!
@@ -281,16 +281,6 @@ input ChangeUserRoleInput {
   role: UserRole!
 }
 
-input CreateCompanyInput {
-  name: String!
-  email: String!
-}
-
-input UpdateCompanyInput {
-  name: String
-  email: String
-}
-
 input CreateUserInput {
   fullName: String!
   email: String!
@@ -303,6 +293,16 @@ input UpdateUserInput {
   email: String
   password: String
   role: UserRole
+}
+
+input CreateCompanyInput {
+  name: String!
+  email: String!
+}
+
+input UpdateCompanyInput {
+  name: String
+  email: String
 }
 
 input CreateProductInput {

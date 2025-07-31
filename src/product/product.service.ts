@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Product } from './product.entity';
-import { OrderItem } from '../orderItem/orderItem.entity';
-import { Order } from '../order/order.entity';
 import { BaseService } from 'src/common/services/base.service';
 import { BestSellingProductType } from './product.types';
 
@@ -12,12 +10,6 @@ export class ProductService extends BaseService<Product> {
   constructor(
     @InjectRepository(Product)
     private readonly productRepo: Repository<Product>,
-
-    @InjectRepository(OrderItem)
-    private readonly orderItemRepo: Repository<OrderItem>,
-
-    @InjectRepository(Order)
-    private readonly orderRepo: Repository<Order>,
   ) {
     super(productRepo);
   }
@@ -32,6 +24,8 @@ export class ProductService extends BaseService<Product> {
       .addSelect('product.name', 'title')
       .addSelect('SUM(orderItem.quantity)', 'totalSold')
       .where('product.company_id = :companyId', { companyId })
+      .andWhere('product.deleted_at IS NULL')
+      .andWhere('orderItem.deleted_at IS NULL')
       .andWhere('orders.deleted_at IS NULL')
       .andWhere('orders.order_type = :orderType', { orderType: 'shipment' })
       .groupBy('product.id')
