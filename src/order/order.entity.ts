@@ -1,7 +1,6 @@
-import { Entity, Column } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
-
-export type OrderType = 'shipment' | 'delivery';
+import { OrderTypeEnum } from './order.types';
 
 @Entity({ name: 'orders' })
 export class Order extends BaseEntity {
@@ -14,8 +13,12 @@ export class Order extends BaseEntity {
   @Column({ type: 'uuid' })
   warehouseId!: string;
 
-  @Column({ type: 'enum', enum: ['shipment', 'delivery'] })
-  orderType!: OrderType;
+  @Column({
+    type: 'enum',
+    enum: OrderTypeEnum,
+    enumName: 'order_type_enum',
+  })
+  orderType!: OrderTypeEnum;
 
   @Column({ type: 'text', nullable: true })
   notes!: string | null;

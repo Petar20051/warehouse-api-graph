@@ -1,7 +1,6 @@
 import { Entity, Column } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
-
-export type ProductType = 'solid' | 'liquid';
+import { ProductTypeEnum } from 'src/product/product.types';
 
 @Entity('warehouse')
 export class Warehouse extends BaseEntity {
@@ -14,6 +13,6 @@ export class Warehouse extends BaseEntity {
   @Column({ type: 'text' })
   location!: string;
 
-  @Column({ name: 'supported_type', type: 'enum', enum: ['solid', 'liquid'] })
-  supportedType!: ProductType;
+  @Column({ name: 'supported_type', type: 'enum', enum: ProductTypeEnum })
+  supportedType!: ProductTypeEnum;
 }

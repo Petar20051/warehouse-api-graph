@@ -6,17 +6,22 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+
+import { User } from 'src/user/user.entity';
+import { Company } from 'src/company/company.entity';
+import { UserRole } from 'src/user/user.types';
+import { AuthUser } from 'src/common/types/auth-user';
+
 import {
   AuthMessages,
+  ChangePasswordDto,
+  ChangeUserRoleDto,
   LoginDto,
   RegisterDto,
   RegisterUserToCompanyDto,
 } from './auth.types';
-import { User } from 'src/user/user.entity';
-import { Company } from 'src/company/company.entity';
-import { UserRole } from 'src/user/user.types';
 
 @Injectable()
 export class AuthService {
@@ -27,24 +32,24 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(data: RegisterDto) {
+  async register(dto: RegisterDto) {
     const existing = await this.userRepo.findOne({
-      where: { email: data.email },
+      where: { email: dto.email },
     });
     if (existing) throw new ConflictException('Email already in use');
 
-    const hashed = await bcrypt.hash(data.password, 10);
+    const hashedPassword = await this.hashPassword(dto.password);
 
     const company = this.companyRepo.create({
-      name: data.companyName,
-      email: data.companyEmail,
+      name: dto.companyName,
+      email: dto.companyEmail,
     });
     await this.companyRepo.save(company);
 
     const user = this.userRepo.create({
-      email: data.email,
-      password: hashed,
-      fullName: data.fullName,
+      email: dto.email,
+      password: hashedPassword,
+      fullName: dto.fullName,
       role: UserRole.OWNER,
       companyId: company.id,
     });
@@ -56,34 +61,32 @@ export class AuthService {
     return this.generateToken(user);
   }
 
-  async login(data: LoginDto) {
-    const user = await this.userRepo.findOne({ where: { email: data.email } });
-    if (!user) throw new UnauthorizedException(AuthMessages.invalidCredentials);
-
-    const isMatch = await bcrypt.compare(data.password, user.password);
-    if (!isMatch)
+  async login(dto: LoginDto) {
+    const user = await this.userRepo.findOne({ where: { email: dto.email } });
+    if (!user || !(await this.verifyPassword(dto.password, user.password))) {
       throw new UnauthorizedException(AuthMessages.invalidCredentials);
+    }
 
     return this.generateToken(user);
   }
 
-  async registerUserToCompany(data: RegisterUserToCompanyDto) {
-    const { companyId, fullName, email, password } = data;
-
+  async registerUserToCompany(dto: RegisterUserToCompanyDto) {
     const existingCompany = await this.companyRepo.findOne({
-      where: { id: companyId },
+      where: { id: dto.companyId },
     });
     if (!existingCompany) throw new NotFoundException('Company not found');
 
-    const existingUser = await this.userRepo.findOne({ where: { email } });
+    const existingUser = await this.userRepo.findOne({
+      where: { email: dto.email },
+    });
     if (existingUser) throw new ConflictException('Email already in use');
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await this.hashPassword(dto.password);
 
     const newUser = this.userRepo.create({
-      companyId,
-      fullName,
-      email,
+      companyId: dto.companyId,
+      fullName: dto.fullName,
+      email: dto.email,
       password: hashedPassword,
       role: UserRole.VIEWER,
     });
@@ -92,15 +95,51 @@ export class AuthService {
     return { message: 'User registered successfully' };
   }
 
-  private generateToken(user: User) {
-    const payload = {
-      sub: user.id,
-      role: user.role,
-      companyId: user.companyId,
-    };
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.userRepo.findOne({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
 
+    if (!(await this.verifyPassword(dto.oldPassword, user.password))) {
+      throw new UnauthorizedException('Old password is incorrect');
+    }
+
+    user.password = await this.hashPassword(dto.newPassword);
+    await this.userRepo.save(user);
+
+    return { message: 'Password changed successfully' };
+  }
+
+  async changeUserRole(dto: ChangeUserRoleDto, currentUser: AuthUser) {
+    const user = await this.userRepo.findOne({
+      where: { id: dto.userId, companyId: currentUser.companyId },
+    });
+
+    if (!user) throw new NotFoundException('User not found');
+
+    user.role = dto.role;
+    await this.userRepo.save(user);
+
+    return { message: 'User role updated successfully' };
+  }
+
+  private generateToken(user: User) {
     return {
-      accessToken: this.jwtService.sign(payload),
+      accessToken: this.jwtService.sign({
+        sub: user.id,
+        role: user.role,
+        companyId: user.companyId,
+      }),
     };
+  }
+
+  private async hashPassword(password: string): Promise<string> {
+    return bcrypt.hash(password, 10);
+  }
+
+  private async verifyPassword(
+    plain: string,
+    hashed: string,
+  ): Promise<boolean> {
+    return bcrypt.compare(plain, hashed);
   }
 }

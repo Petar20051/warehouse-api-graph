@@ -14,13 +14,14 @@ import {
   UpdateWarehouseInput,
   createWarehouseSchema,
   updateWarehouseSchema,
+  WarehouseTopStockType,
 } from './warehouse.types';
 import { Warehouse } from './warehouse.entity';
 import { WarehouseService } from './warehouse.service';
 
 import { BaseResolver } from 'src/common/resolvers/base.resolver';
 import { AuthUser } from 'src/common/types/auth-user';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -47,16 +48,40 @@ export class WarehouseResolver extends BaseResolver<
   }
 
   @Query(() => [WarehouseType], { name: 'getAllWarehouses' })
-  override findAll(@CurrentUser() user: AuthUser) {
-    return super.findAll(user);
+  override findAll(@CurrentUser('companyId') companyId: string) {
+    return super.findAll(companyId);
   }
 
   @Query(() => WarehouseType, { nullable: true, name: 'getWarehouseById' })
   override findOne(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.findOne(id, user);
+    return super.findOne(id, companyId);
+  }
+
+  @Query(() => [WarehouseTopStockType], {
+    name: 'getProductWithHighestStock',
+    nullable: true,
+  })
+  async getProductWithHighestStock(
+    @CurrentUser('companyId') companyId: string,
+  ): Promise<WarehouseTopStockType[] | null> {
+    return this.warehouseService.getProductWithHighestStock(companyId);
+  }
+
+  @Query(() => [WarehouseTopStockType], {
+    name: 'getWarehouseStockBreakdown',
+    nullable: true,
+  })
+  async getWarehouseStockBreakdown(
+    @Args('warehouseId', { type: () => String }) warehouseId: string,
+    @CurrentUser('companyId') companyId: string,
+  ): Promise<WarehouseTopStockType[] | null> {
+    return this.warehouseService.getWarehouseStockBreakdown(
+      warehouseId,
+      companyId,
+    );
   }
 
   @Mutation(() => WarehouseType, { name: 'createWarehouse' })
@@ -91,16 +116,13 @@ export class WarehouseResolver extends BaseResolver<
   @Roles(UserRole.OWNER)
   override hardDelete(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.hardDelete(id, user);
+    return super.hardDelete(id, companyId);
   }
 
   @ResolveField(() => [OrderType], { nullable: 'itemsAndList' })
-  orders(
-    @Parent() warehouse: Warehouse,
-    @CurrentUser() user: AuthUser,
-  ): Promise<Order[]> {
-    return this.orderService.findByWarehouse(warehouse.id, user.companyId);
+  orders(@Parent() warehouse: Warehouse): Promise<Order[]> {
+    return this.orderService.findByWarehouse(warehouse.id, warehouse.companyId);
   }
 }

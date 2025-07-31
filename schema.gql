@@ -2,14 +2,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type AuthPayloadType {
-  accessToken: String!
-}
-
-type MessagePayload {
-  message: String!
-}
-
 type UserType {
   id: ID!
   createdAt: DateTime!
@@ -32,6 +24,22 @@ enum UserRole {
   OWNER
   OPERATOR
   VIEWER
+}
+
+type AuthPayloadType {
+  accessToken: String!
+}
+
+type MessagePayload {
+  message: String!
+}
+
+type WarehouseTopStockType {
+  warehouseId: ID!
+  warehouseName: String!
+  productId: ID!
+  productName: String!
+  stock: String!
 }
 
 type WarehouseType {
@@ -74,6 +82,12 @@ enum PartnerTypeEnum {
   SUPPLIER
 }
 
+type TopCustomerResultType {
+  partnerId: ID!
+  name: String!
+  totalOrders: Int!
+}
+
 type InvoiceType {
   id: ID!
   createdAt: DateTime!
@@ -86,6 +100,7 @@ type InvoiceType {
   status: InvoiceStatus!
   date: DateTime!
   order: OrderType!
+  total: Float!
 }
 
 enum InvoiceStatus {
@@ -129,6 +144,7 @@ type OrderItemType {
   productId: ID!
   unitPrice: Float!
   quantity: Float!
+  total: Float!
   order: OrderType!
   product: ProductType!
 }
@@ -147,6 +163,12 @@ type ProductType {
   description: String
   basePrice: Float!
   orderItems: [OrderItemType]
+}
+
+type BestSellingProductType {
+  productId: String!
+  title: String!
+  totalSold: String!
 }
 
 type CompanyType {
@@ -171,6 +193,7 @@ type Query {
   getUserById(id: String!): UserType
   getAllProducts: [ProductType!]!
   getProductById(id: String!): ProductType
+  getBestSellingProducts: [BestSellingProductType!]!
   getAllOrderItems: [OrderItemType!]!
   getOrderItemById(id: String!): OrderItemType
   getAllOrders: [OrderType!]!
@@ -179,18 +202,24 @@ type Query {
   getInvoiceById(id: String!): InvoiceType
   getAllWarehouses: [WarehouseType!]!
   getWarehouseById(id: String!): WarehouseType
+  getProductWithHighestStock: [WarehouseTopStockType!]
+  getWarehouseStockBreakdown(warehouseId: String!): [WarehouseTopStockType!]
   getAllPartners: [PartnerType!]!
   getPartnerById(id: String!): PartnerType
+  getTopCustomerByOrders: TopCustomerResultType
 }
 
 type Mutation {
-  register(input: RegisterInput!): AuthPayloadType!
-  login(input: LoginInput!): AuthPayloadType!
-  registerUser(input: RegisterUserToCompanyInput!): MessagePayload!
+  RegisterUserAndCompany(input: RegisterInput!): AuthPayloadType!
+  Login(input: LoginInput!): AuthPayloadType!
+  RegisterUserToCompany(input: RegisterUserToCompanyInput!): MessagePayload!
+  ChangePassword(input: ChangePasswordInput!): MessagePayload!
+  ChangeUserRole(input: ChangeUserRoleInput!): MessagePayload!
   createCompany(input: CreateCompanyInput!): CompanyType!
   updateCompany(id: String!, input: UpdateCompanyInput!): CompanyType!
   softDeleteCompany(id: String!): Boolean!
   hardDeleteCompany(id: String!): Boolean!
+  createUser(input: CreateUserInput!): UserType!
   updateUser(id: String!, input: UpdateUserInput!): UserType!
   softDeleteUser(id: String!): Boolean!
   hardDeleteUser(id: String!): Boolean!
@@ -206,6 +235,8 @@ type Mutation {
   updateOrder(id: String!, input: UpdateOrderInput!): OrderType!
   softDeleteOrder(id: String!): Boolean!
   hardDeleteOrder(id: String!): Boolean!
+  transferProductBetweenWarehouses(input: TransferProductInput!): MessagePayload!
+  createOrderWithItems(input: CreateOrderWithItemsInput!): OrderType!
   createInvoice(input: CreateInvoiceInput!): InvoiceType!
   updateInvoice(id: String!, input: UpdateInvoiceInput!): InvoiceType!
   softDeleteInvoice(id: String!): Boolean!
@@ -240,6 +271,16 @@ input RegisterUserToCompanyInput {
   password: String!
 }
 
+input ChangePasswordInput {
+  oldPassword: String!
+  newPassword: String!
+}
+
+input ChangeUserRoleInput {
+  userId: ID!
+  role: UserRole!
+}
+
 input CreateCompanyInput {
   name: String!
   email: String!
@@ -248,6 +289,13 @@ input CreateCompanyInput {
 input UpdateCompanyInput {
   name: String
   email: String
+}
+
+input CreateUserInput {
+  fullName: String!
+  email: String!
+  password: String!
+  role: UserRole!
 }
 
 input UpdateUserInput {
@@ -301,6 +349,22 @@ input UpdateOrderInput {
   orderType: OrderTypeEnum
   notes: String
   date: DateTime
+}
+
+input TransferProductInput {
+  productId: ID!
+  quantity: Int!
+  fromWarehouseId: ID!
+  toWarehouseId: ID!
+}
+
+input CreateOrderWithItemsInput {
+  orderType: OrderTypeEnum!
+  warehouseId: ID!
+  partnerId: ID
+  notes: String
+  date: DateTime
+  orderItems: [CreateOrderItemInput!]!
 }
 
 input CreateInvoiceInput {

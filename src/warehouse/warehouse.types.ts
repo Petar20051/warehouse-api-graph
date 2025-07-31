@@ -1,4 +1,4 @@
-import { Field, InputType, ObjectType } from '@nestjs/graphql';
+import { Field, ID, InputType, ObjectType } from '@nestjs/graphql';
 import { z } from 'zod';
 
 import { BaseObjectType } from 'src/common/types/base-object.type';
@@ -16,13 +16,23 @@ export const updateWarehouseSchema = createWarehouseSchema.partial();
 export type CreateWarehouse = z.infer<typeof createWarehouseSchema>;
 export type UpdateWarehouse = z.infer<typeof updateWarehouseSchema>;
 
-export type WarehouseTopStock = {
-  warehouseId: string;
-  warehouseName: string;
-  productId: string;
-  productName: string;
-  stock: string;
-};
+@ObjectType()
+export class WarehouseTopStockType {
+  @Field(() => ID)
+  warehouseId!: string;
+
+  @Field()
+  warehouseName!: string;
+
+  @Field(() => ID)
+  productId!: string;
+
+  @Field()
+  productName!: string;
+
+  @Field()
+  stock!: string;
+}
 
 @ObjectType()
 export class WarehouseType extends BaseObjectType {

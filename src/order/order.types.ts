@@ -1,14 +1,17 @@
+import { z } from 'zod';
 import {
   Field,
   InputType,
   ObjectType,
-  registerEnumType,
   ID,
+  Int,
+  registerEnumType,
 } from '@nestjs/graphql';
-import { z } from 'zod';
-
 import { BaseObjectType } from 'src/common/types/base-object.type';
-import { OrderItemType } from '../orderItem/orderItem.types';
+import {
+  CreateOrderItemInput,
+  OrderItemType,
+} from '../orderItem/orderItem.types';
 import { WarehouseType } from '../warehouse/warehouse.types';
 import { PartnerType } from '../partner/partner.types';
 import { InvoiceType } from '../invoice/invoice.types';
@@ -25,7 +28,7 @@ registerEnumType(OrderTypeEnum, {
 export const createOrderSchema = z.object({
   warehouseId: z.string().uuid(),
   partnerId: z.string().uuid().optional(),
-  orderType: z.enum(['shipment', 'delivery']),
+  orderType: z.nativeEnum(OrderTypeEnum),
   notes: z.string().optional(),
   date: z.coerce.date().optional(),
 });
@@ -102,4 +105,40 @@ export class UpdateOrderInput {
 
   @Field({ nullable: true })
   date?: Date;
+}
+
+@InputType()
+export class TransferProductInput {
+  @Field(() => ID)
+  productId!: string;
+
+  @Field(() => Int)
+  quantity!: number;
+
+  @Field(() => ID)
+  fromWarehouseId!: string;
+
+  @Field(() => ID)
+  toWarehouseId!: string;
+}
+
+@InputType()
+export class CreateOrderWithItemsInput {
+  @Field(() => OrderTypeEnum)
+  orderType!: OrderTypeEnum;
+
+  @Field(() => ID)
+  warehouseId!: string;
+
+  @Field(() => ID, { nullable: true })
+  partnerId?: string;
+
+  @Field({ nullable: true })
+  notes?: string;
+
+  @Field({ nullable: true })
+  date?: Date;
+
+  @Field(() => [CreateOrderItemInput])
+  orderItems!: CreateOrderItemInput[];
 }

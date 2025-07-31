@@ -7,6 +7,7 @@ import {
   Args,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
+import { ZodValidationPipe } from 'nestjs-zod';
 
 import {
   PartnerType,
@@ -14,13 +15,14 @@ import {
   UpdatePartnerInput,
   createPartnerSchema,
   updatePartnerSchema,
+  TopCustomerResultType,
 } from './partner.types';
 import { Partner } from './partner.entity';
 import { PartnerService } from './partner.service';
 
 import { BaseResolver } from 'src/common/resolvers/base.resolver';
 import { AuthUser } from 'src/common/types/auth-user';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -29,7 +31,6 @@ import { UserRole } from 'src/user/user.types';
 import { OrderService } from 'src/order/order.service';
 import { OrderType } from 'src/order/order.types';
 import { Order } from 'src/order/order.entity';
-import { ZodValidationPipe } from 'nestjs-zod';
 import { idParamSchema } from 'src/common/types/id-param.static';
 
 @Resolver(() => PartnerType)
@@ -45,18 +46,33 @@ export class PartnerResolver extends BaseResolver<
   ) {
     super(partnerService);
   }
+
   @Query(() => [PartnerType], { name: 'getAllPartners' })
-  override findAll(@CurrentUser() user: AuthUser) {
-    return super.findAll(user);
+  override findAll(@CurrentUser('companyId') companyId: string) {
+    return super.findAll(companyId);
   }
 
-  @Query(() => PartnerType, { nullable: true, name: 'getPartnerById' })
+  @Query(() => PartnerType, { name: 'getPartnerById', nullable: true })
   override findOne(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.findOne(id, user);
+    return super.findOne(id, companyId);
   }
+
+  @Query(() => TopCustomerResultType, {
+    name: 'getTopCustomerByOrders',
+    nullable: true,
+  })
+  async getTopCustomerByOrders(
+    @CurrentUser() user: AuthUser,
+  ): Promise<TopCustomerResultType | null> {
+    const raw = await this.partnerService.getTopCustomerByOrders(
+      user.companyId,
+    );
+    return raw ? { ...raw, totalOrders: Number(raw.totalOrders) } : null;
+  }
+
   @Mutation(() => PartnerType, { name: 'createPartner' })
   @Roles(UserRole.OWNER, UserRole.OPERATOR)
   override create(
@@ -91,16 +107,13 @@ export class PartnerResolver extends BaseResolver<
   @Roles(UserRole.OWNER)
   override hardDelete(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.hardDelete(id, user);
+    return super.hardDelete(id, companyId);
   }
 
   @ResolveField(() => [OrderType], { nullable: 'itemsAndList' })
-  orders(
-    @Parent() partner: Partner,
-    @CurrentUser() user: AuthUser,
-  ): Promise<Order[]> {
-    return this.orderService.findByPartner(partner.id, user.companyId);
+  orders(@Parent() partner: Partner): Promise<Order[]> {
+    return this.orderService.findByPartner(partner.id, partner.companyId);
   }
 }

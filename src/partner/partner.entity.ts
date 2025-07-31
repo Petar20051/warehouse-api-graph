@@ -15,11 +15,11 @@ export class Partner extends BaseEntity {
   type!: PartnerType;
 
   @Column({ type: 'varchar', length: 150, nullable: true })
-  email!: string | null;
+  email?: string;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
-  phone!: string | null;
+  phone?: string;
 
   @Column({ type: 'text', nullable: true })
-  address!: string | null;
+  address?: string;
 }

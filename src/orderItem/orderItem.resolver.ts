@@ -5,6 +5,7 @@ import {
   Query,
   Mutation,
   Args,
+  Float,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 
@@ -20,7 +21,7 @@ import { OrderItemService } from './orderItem.service';
 
 import { BaseResolver } from 'src/common/resolvers/base.resolver';
 import { AuthUser } from 'src/common/types/auth-user';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -30,6 +31,7 @@ import { OrderService } from 'src/order/order.service';
 import { ProductService } from 'src/product/product.service';
 import { OrderType } from 'src/order/order.types';
 import { ProductType } from 'src/product/product.types';
+
 import { ZodValidationPipe } from 'nestjs-zod';
 import { idParamSchema } from 'src/common/types/id-param.static';
 
@@ -49,16 +51,16 @@ export class OrderItemResolver extends BaseResolver<
   }
 
   @Query(() => [OrderItemType], { name: 'getAllOrderItems' })
-  override findAll(@CurrentUser() user: AuthUser) {
-    return super.findAll(user);
+  override findAll(@CurrentUser('companyId') companyId: string) {
+    return super.findAll(companyId);
   }
 
-  @Query(() => OrderItemType, { nullable: true, name: 'getOrderItemById' })
+  @Query(() => OrderItemType, { name: 'getOrderItemById', nullable: true })
   override findOne(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.findOne(id, user);
+    return super.findOne(id, companyId);
   }
 
   @Mutation(() => OrderItemType, { name: 'createOrderItem' })
@@ -95,18 +97,29 @@ export class OrderItemResolver extends BaseResolver<
   @Roles(UserRole.OWNER)
   override hardDelete(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.hardDelete(id, user);
+    return super.hardDelete(id, companyId);
   }
 
   @ResolveField(() => OrderType)
-  order(@Parent() item: OrderItem, @CurrentUser() user: AuthUser) {
-    return this.orderService.findOne(item.orderId, user.companyId);
+  order(
+    @Parent() item: OrderItem,
+    @CurrentUser('companyId') companyId: string,
+  ) {
+    return this.orderService.findOne(item.orderId, companyId);
   }
 
   @ResolveField(() => ProductType)
-  product(@Parent() item: OrderItem, @CurrentUser() user: AuthUser) {
-    return this.productService.findOne(item.productId, user.companyId);
+  product(
+    @Parent() item: OrderItem,
+    @CurrentUser('companyId') companyId: string,
+  ) {
+    return this.productService.findOne(item.productId, companyId);
+  }
+
+  @ResolveField(() => Float)
+  total(@Parent() item: OrderItem): number {
+    return item.quantity * item.unitPrice;
   }
 }

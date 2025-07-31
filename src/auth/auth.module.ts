@@ -19,13 +19,10 @@ import { AuthResolver } from './auth.resolver';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => {
-        const secret = config.get<string>('JWT_SECRET');
-        return {
-          secret,
-          signOptions: { expiresIn: '1d' },
-        };
-      },
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '1d' },
+      }),
     }),
   ],
 

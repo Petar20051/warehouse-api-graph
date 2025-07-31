@@ -7,9 +7,11 @@ import { OrderItem } from './orderItem.entity';
 import { Order } from '../order/order.entity';
 import { Product } from '../product/product.entity';
 import { Warehouse } from '../warehouse/warehouse.entity';
+
 import { BaseService } from 'src/common/services/base.service';
 import { AuthUser } from 'src/common/types/auth-user';
 import { CreateOrderItem, UpdateOrderItem } from './orderItem.types';
+import { OrderTypeEnum } from 'src/order/order.types';
 
 @Injectable()
 export class OrderItemService extends BaseService<OrderItem> {
@@ -29,7 +31,7 @@ export class OrderItemService extends BaseService<OrderItem> {
     return this.repo.find({ where: { orderId } });
   }
 
-  async findByProduct(productId: string): Promise<OrderItem[]> {
+  async findByProduct(productId: string) {
     return this.repo.find({ where: { productId } });
   }
 
@@ -39,15 +41,12 @@ export class OrderItemService extends BaseService<OrderItem> {
   ): Promise<OrderItem> {
     await this.runAllValidations(dto, user.companyId);
 
-    const entity: Partial<OrderItem> = {
-      unitPrice: dto.unitPrice,
-      quantity: dto.quantity,
-      orderId: dto.orderId,
-      productId: dto.productId,
+    const entity = this.repo.create({
+      ...dto,
       modifiedByUserId: user.userId,
-    };
+    });
 
-    return this.repo.save(this.repo.create(entity));
+    return this.repo.save(entity);
   }
 
   override async updateWithUserContext(
@@ -56,20 +55,16 @@ export class OrderItemService extends BaseService<OrderItem> {
     user: AuthUser,
   ): Promise<OrderItem> {
     const existing = await this.findOne(id, user.companyId);
-    if (!existing) {
+    if (!existing)
       throw new ForbiddenException('Order item not found or access denied');
-    }
 
-    const updated: Partial<OrderItem> = {
-      ...existing,
+    const updated = Object.assign(existing, {
       ...dto,
       modifiedByUserId: user.userId,
-    };
+    });
 
     await this.runAllValidations(updated, user.companyId);
-
-    Object.assign(existing, updated);
-    return this.repo.save(existing);
+    return this.repo.save(updated);
   }
 
   private async runAllValidations(
@@ -86,20 +81,18 @@ export class OrderItemService extends BaseService<OrderItem> {
   ) {
     if (!dto.orderId || !dto.productId) return;
 
-    const order = await this.orderRepo.findOne({
-      where: { id: dto.orderId, companyId },
-    });
+    const [order, product] = await Promise.all([
+      this.orderRepo.findOne({ where: { id: dto.orderId, companyId } }),
+      this.productRepo.findOne({ where: { id: dto.productId, companyId } }),
+    ]);
+
     if (!order) throw new UserInputError('Order not found');
+    if (!product) throw new UserInputError('Product not found');
 
     const warehouse = await this.warehouseRepo.findOne({
       where: { id: order.warehouseId, companyId },
     });
     if (!warehouse) throw new UserInputError('Warehouse not found');
-
-    const product = await this.productRepo.findOne({
-      where: { id: dto.productId, companyId },
-    });
-    if (!product) throw new UserInputError('Product not found');
 
     if (warehouse.supportedType !== product.productType) {
       throw new ApolloError(
@@ -120,8 +113,7 @@ export class OrderItemService extends BaseService<OrderItem> {
       where: { id: dto.orderId, companyId },
     });
     if (!order) throw new UserInputError('Order not found');
-
-    if (order.orderType !== 'shipment') return;
+    if (order.orderType !== OrderTypeEnum.SHIPMENT) return;
 
     const orderItems = await this.repo
       .createQueryBuilder('orderItem')
@@ -135,7 +127,6 @@ export class OrderItemService extends BaseService<OrderItem> {
       .getMany();
 
     let availableStock = 0;
-
     for (const item of orderItems) {
       if (item.orderId === order.id) continue;
 
@@ -145,7 +136,9 @@ export class OrderItemService extends BaseService<OrderItem> {
       if (!itemOrder) continue;
 
       availableStock +=
-        itemOrder.orderType === 'delivery' ? item.quantity : -item.quantity;
+        itemOrder.orderType === OrderTypeEnum.DELIVERY
+          ? item.quantity
+          : -item.quantity;
     }
 
     if (availableStock < dto.quantity) {

@@ -1,6 +1,6 @@
 import { Column, Entity } from 'typeorm';
-import { UserRole } from './user.types';
 import { BaseEntity } from 'src/common/entities/base.entity';
+import { UserRole } from './user.types';
 
 @Entity('user')
 export class User extends BaseEntity {
@@ -16,6 +16,10 @@ export class User extends BaseEntity {
   @Column({ type: 'varchar' })
   password!: string;
 
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.VIEWER })
+  @Column({
+    type: 'enum',
+    enum: UserRole,
+    default: UserRole.VIEWER,
+  })
   role!: UserRole;
 }

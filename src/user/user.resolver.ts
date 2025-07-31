@@ -1,19 +1,24 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 
-import { UserType, CreateUserInput, UpdateUserInput } from './user.types';
+import {
+  UserType,
+  CreateUserInput,
+  UpdateUserInput,
+  createUserSchema,
+  updateUserSchema,
+  UserRole,
+} from './user.types';
 import { User } from './user.entity';
 import { UserService } from './user.service';
 
 import { BaseResolver } from 'src/common/resolvers/base.resolver';
 import { AuthUser } from 'src/common/types/auth-user';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { UserRole } from './user.types';
 
-import { createUserSchema, updateUserSchema } from './user.types';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { idParamSchema } from 'src/common/types/id-param.static';
 
@@ -29,19 +34,19 @@ export class UserResolver extends BaseResolver<
   }
 
   @Query(() => [UserType], { name: 'getAllUsers' })
-  override findAll(@CurrentUser() user: AuthUser) {
-    return super.findAll(user);
+  override findAll(@CurrentUser('companyId') companyId: string) {
+    return super.findAll(companyId);
   }
 
   @Query(() => UserType, { nullable: true, name: 'getUserById' })
   override findOne(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.findOne(id, user);
+    return super.findOne(id, companyId);
   }
 
-  //@Mutation(() => UserType, { name: 'createUser' })
+  @Mutation(() => UserType, { name: 'createUser' })
   @Roles(UserRole.OWNER)
   override create(
     @Args('input', new ZodValidationPipe(createUserSchema))
@@ -75,8 +80,8 @@ export class UserResolver extends BaseResolver<
   @Roles(UserRole.OWNER)
   override hardDelete(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.hardDelete(id, user);
+    return super.hardDelete(id, companyId);
   }
 }

@@ -31,6 +31,9 @@ export class OrderItemType extends BaseObjectType {
   @Field(() => Float)
   quantity!: number;
 
+  @Field(() => Float)
+  total!: number;
+
   @Field(() => OrderType)
   order!: OrderType;
 

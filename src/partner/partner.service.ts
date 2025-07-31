@@ -3,7 +3,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Partner } from './partner.entity';
-import { Order } from '../order/order.entity';
 
 import { BaseService } from 'src/common/services/base.service';
 import { TopCustomerResultType } from './partner.types';
@@ -13,9 +12,6 @@ export class PartnerService extends BaseService<Partner> {
   constructor(
     @InjectRepository(Partner)
     private readonly partnerRepo: Repository<Partner>,
-
-    @InjectRepository(Order)
-    private readonly orderRepo: Repository<Order>,
   ) {
     super(partnerRepo);
   }
@@ -25,15 +21,15 @@ export class PartnerService extends BaseService<Partner> {
   ): Promise<TopCustomerResultType | null> {
     const raw = await this.partnerRepo
       .createQueryBuilder('partner')
-      .leftJoin('partner.orders', 'order')
+      .leftJoin('orders', 'orders', 'orders.partner_id = partner.id')
       .select('partner.id', 'partnerId')
       .addSelect('partner.name', 'name')
-      .addSelect('COUNT(order.id)', 'totalOrders')
-      .where('partner.companyId = :companyId', { companyId })
+      .addSelect('COUNT(orders.id)', 'totalOrders')
+      .where('partner.company_id = :companyId', { companyId })
       .andWhere('partner.type = :type', { type: 'customer' })
-      .andWhere('order.deletedAt IS NULL')
+      .andWhere('orders.deleted_at IS NULL')
       .groupBy('partner.id')
-      .orderBy('COUNT(order.id)', 'DESC')
+      .orderBy('COUNT(orders.id)', 'DESC')
       .limit(1)
       .getRawOne<TopCustomerResultType>();
 

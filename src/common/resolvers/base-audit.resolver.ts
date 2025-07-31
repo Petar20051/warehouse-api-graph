@@ -1,5 +1,5 @@
 import { Resolver, ResolveField, Parent } from '@nestjs/graphql';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { UserService } from 'src/user/user.service';
 import { UserType } from 'src/user/user.types';
 

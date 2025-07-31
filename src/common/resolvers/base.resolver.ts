@@ -4,17 +4,17 @@ import { AuthUser } from '../types/auth-user';
 
 export abstract class BaseResolver<
   T extends { id: string; companyId?: string },
-  CreateDto extends DeepPartial<T> = DeepPartial<T>,
-  UpdateDto extends DeepPartial<T> = DeepPartial<T>,
+  CreateDto extends DeepPartial<T>,
+  UpdateDto extends DeepPartial<T>,
 > {
   constructor(protected readonly service: BaseService<T>) {}
 
-  async findAll(user: AuthUser): Promise<T[]> {
-    return this.service.findAllByCompany(user.companyId);
+  async findAll(companyId: string): Promise<T[]> {
+    return this.service.findAllByCompany(companyId);
   }
 
-  async findOne(id: string, user: AuthUser): Promise<T | null> {
-    return this.service.findOne(id, user.companyId);
+  async findOne(id: string, companyId: string): Promise<T | null> {
+    return this.service.findOne(id, companyId);
   }
 
   async create(dto: CreateDto, user: AuthUser): Promise<T> {
@@ -29,7 +29,7 @@ export abstract class BaseResolver<
     return this.service.softDelete(id, user);
   }
 
-  async hardDelete(id: string, user: AuthUser): Promise<void> {
-    return this.service.hardDelete(id, user.companyId);
+  async hardDelete(id: string, companyId: string): Promise<void> {
+    return this.service.hardDelete(id, companyId);
   }
 }

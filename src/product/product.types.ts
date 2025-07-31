@@ -14,10 +14,7 @@ export enum ProductTypeEnum {
   SOLID = 'solid',
   LIQUID = 'liquid',
 }
-
-registerEnumType(ProductTypeEnum, {
-  name: 'ProductTypeEnum',
-});
+registerEnumType(ProductTypeEnum, { name: 'ProductTypeEnum' });
 
 export const createProductSchema = z.object({
   name: z.string().min(2),
@@ -54,6 +51,18 @@ export class ProductType extends BaseObjectType {
 
   @Field(() => [OrderItemType], { nullable: 'itemsAndList' })
   orderItems?: OrderItemType[];
+}
+
+@ObjectType()
+export class BestSellingProductType {
+  @Field()
+  productId!: string;
+
+  @Field()
+  title!: string;
+
+  @Field()
+  totalSold!: string;
 }
 
 @InputType()

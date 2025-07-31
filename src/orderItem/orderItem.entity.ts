@@ -9,6 +9,7 @@ export class OrderItem extends BaseEntity {
 
   @Column({ type: 'uuid' })
   productId!: string;
+
   @Column({ type: 'numeric', precision: 12, scale: 2 })
   unitPrice!: number;
 

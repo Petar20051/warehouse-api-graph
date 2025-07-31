@@ -7,6 +7,7 @@ import {
   Args,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
+import { ZodValidationPipe } from 'nestjs-zod';
 
 import {
   ProductType,
@@ -14,22 +15,22 @@ import {
   UpdateProductInput,
   createProductSchema,
   updateProductSchema,
+  BestSellingProductType,
 } from './product.types';
 import { Product } from './product.entity';
 import { ProductService } from './product.service';
 
 import { BaseResolver } from 'src/common/resolvers/base.resolver';
 import { AuthUser } from 'src/common/types/auth-user';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { UserRole } from 'src/user/user.types';
 
 import { OrderItemService } from 'src/orderItem/orderItem.service';
-import { OrderItemType } from 'src/orderItem/orderItem.types';
 import { OrderItem } from 'src/orderItem/orderItem.entity';
-import { ZodValidationPipe } from 'nestjs-zod';
+import { OrderItemType } from 'src/orderItem/orderItem.types';
 import { idParamSchema } from 'src/common/types/id-param.static';
 
 @Resolver(() => ProductType)
@@ -47,16 +48,21 @@ export class ProductResolver extends BaseResolver<
   }
 
   @Query(() => [ProductType], { name: 'getAllProducts' })
-  override findAll(@CurrentUser() user: AuthUser) {
-    return super.findAll(user);
+  override findAll(@CurrentUser('companyId') companyId: string) {
+    return super.findAll(companyId);
   }
 
-  @Query(() => ProductType, { nullable: true, name: 'getProductById' })
+  @Query(() => ProductType, { name: 'getProductById', nullable: true })
   override findOne(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.findOne(id, user);
+    return super.findOne(id, companyId);
+  }
+
+  @Query(() => [BestSellingProductType], { name: 'getBestSellingProducts' })
+  getBestSellingProducts(@CurrentUser('companyId') companyId: string) {
+    return this.productService.getBestSellingProducts(companyId);
   }
 
   @Mutation(() => ProductType, { name: 'createProduct' })
@@ -93,9 +99,9 @@ export class ProductResolver extends BaseResolver<
   @Roles(UserRole.OWNER)
   override hardDelete(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.hardDelete(id, user);
+    return super.hardDelete(id, companyId);
   }
 
   @ResolveField(() => [OrderItemType], { nullable: 'itemsAndList' })

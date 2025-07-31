@@ -1,4 +1,4 @@
-import { Entity, Column } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
 
 export enum InvoiceStatus {
@@ -15,10 +15,7 @@ export class Invoice extends BaseEntity {
   @Column({ name: 'invoice_number', type: 'varchar', length: 50, unique: true })
   invoiceNumber!: string;
 
-  @Column({
-    type: 'enum',
-    enum: InvoiceStatus,
-  })
+  @Column({ type: 'enum', enum: InvoiceStatus })
   status!: InvoiceStatus;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })

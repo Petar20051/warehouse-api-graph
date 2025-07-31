@@ -7,24 +7,30 @@ import {
   Args,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
+import { ZodValidationPipe } from 'nestjs-zod';
 
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
+import { UserRole } from 'src/user/user.types';
+
+import { OrderService } from './order.service';
 import {
   OrderType,
   CreateOrderInput,
   UpdateOrderInput,
   createOrderSchema,
   updateOrderSchema,
+  TransferProductInput,
+  CreateOrderWithItemsInput,
 } from './order.types';
 import { Order } from './order.entity';
-import { OrderService } from './order.service';
 
-import { BaseResolver } from 'src/common/resolvers/base.resolver';
 import { AuthUser } from 'src/common/types/auth-user';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { UserRole } from 'src/user/user.types';
+import { idParamSchema } from 'src/common/types/id-param.static';
+import { MessagePayload } from 'src/auth/auth.types';
+import { BaseResolver } from 'src/common/resolvers/base.resolver';
 
 import { WarehouseService } from 'src/warehouse/warehouse.service';
 import { PartnerService } from 'src/partner/partner.service';
@@ -35,10 +41,6 @@ import { WarehouseType } from 'src/warehouse/warehouse.types';
 import { PartnerType } from 'src/partner/partner.types';
 import { OrderItemType } from 'src/orderItem/orderItem.types';
 import { InvoiceType } from 'src/invoice/invoice.types';
-
-import { Invoice } from 'src/invoice/invoice.entity';
-import { ZodValidationPipe } from 'nestjs-zod';
-import { idParamSchema } from 'src/common/types/id-param.static';
 
 @Resolver(() => OrderType)
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -58,16 +60,16 @@ export class OrderResolver extends BaseResolver<
   }
 
   @Query(() => [OrderType], { name: 'getAllOrders' })
-  override findAll(@CurrentUser() user: AuthUser) {
-    return super.findAll(user);
+  override findAll(@CurrentUser('companyId') companyId: string) {
+    return super.findAll(companyId);
   }
 
-  @Query(() => OrderType, { nullable: true, name: 'getOrderById' })
+  @Query(() => OrderType, { name: 'getOrderById', nullable: true })
   override findOne(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.findOne(id, user);
+    return super.findOne(id, companyId);
   }
 
   @Mutation(() => OrderType, { name: 'createOrder' })
@@ -104,9 +106,35 @@ export class OrderResolver extends BaseResolver<
   @Roles(UserRole.OWNER)
   override hardDelete(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
+    @CurrentUser('companyId') companyId: string,
+  ) {
+    return super.hardDelete(id, companyId);
+  }
+
+  @Mutation(() => MessagePayload, { name: 'transferProductBetweenWarehouses' })
+  async transferProduct(
+    @Args('input') input: TransferProductInput,
+    @CurrentUser() user: AuthUser,
+  ): Promise<MessagePayload> {
+    const { productId, quantity, fromWarehouseId, toWarehouseId } = input;
+
+    await this.orderService.transferProductBetweenWarehouses(
+      productId,
+      quantity,
+      fromWarehouseId,
+      toWarehouseId,
+      user,
+    );
+
+    return { message: 'Product transfer completed successfully' };
+  }
+
+  @Mutation(() => OrderType, { name: 'createOrderWithItems' })
+  async createOrderWithItems(
+    @Args('input') input: CreateOrderWithItemsInput,
     @CurrentUser() user: AuthUser,
   ) {
-    return super.hardDelete(id, user);
+    return this.orderService.createFullOrder(input, user);
   }
 
   @ResolveField(() => WarehouseType)
@@ -116,8 +144,9 @@ export class OrderResolver extends BaseResolver<
 
   @ResolveField(() => PartnerType, { nullable: true })
   partner(@Parent() order: Order) {
-    if (!order.partnerId) return null;
-    return this.partnerService.findOne(order.partnerId, order.companyId);
+    return order.partnerId
+      ? this.partnerService.findOne(order.partnerId, order.companyId)
+      : null;
   }
 
   @ResolveField(() => [OrderItemType], { nullable: 'itemsAndList' })
@@ -126,7 +155,7 @@ export class OrderResolver extends BaseResolver<
   }
 
   @ResolveField(() => InvoiceType, { nullable: true })
-  async invoice(@Parent() order: Order): Promise<Invoice | null> {
+  invoice(@Parent() order: Order) {
     return this.invoiceService.findByOrderId(order.id);
   }
 }

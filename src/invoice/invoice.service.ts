@@ -1,27 +1,24 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+
 import { Invoice } from './invoice.entity';
+import { Order } from 'src/order/order.entity';
 import { BaseService } from 'src/common/services/base.service';
 import { AuthUser } from 'src/common/types/auth-user';
-import { Order } from 'src/order/order.entity';
 import { CreateInvoiceInput, UpdateInvoiceInput } from './invoice.types';
 
 @Injectable()
 export class InvoiceService extends BaseService<Invoice> {
   constructor(
-    @InjectRepository(Invoice)
-    private readonly invoiceRepo: Repository<Invoice>,
-    @InjectRepository(Order)
-    private readonly orderRepo: Repository<Order>,
+    @InjectRepository(Invoice) repo: Repository<Invoice>,
+    @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
   ) {
-    super(invoiceRepo);
+    super(repo);
   }
 
   async findByOrderId(orderId: string): Promise<Invoice | null> {
-    return this.repo.findOne({
-      where: { orderId },
-    });
+    return this.repo.findOne({ where: { orderId } });
   }
 
   override async createWithUserContext(
@@ -53,13 +50,8 @@ export class InvoiceService extends BaseService<Invoice> {
     dto: UpdateInvoiceInput,
     user: AuthUser,
   ): Promise<Invoice> {
-    const existing = await this.repo.findOne({
-      where: { id },
-    });
-
-    if (!existing) {
-      throw new ForbiddenException('Invoice not found');
-    }
+    const existing = await this.repo.findOne({ where: { id } });
+    if (!existing) throw new ForbiddenException('Invoice not found');
 
     const order = await this.orderRepo.findOne({
       where: { id: existing.orderId, companyId: user.companyId },
@@ -71,12 +63,11 @@ export class InvoiceService extends BaseService<Invoice> {
       );
     }
 
-    const updated: Partial<Invoice> = {
+    Object.assign(existing, {
       ...dto,
       modifiedByUserId: user.userId,
-    };
+    });
 
-    Object.assign(existing, updated);
     return this.repo.save(existing);
   }
 }

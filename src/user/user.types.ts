@@ -5,7 +5,6 @@ import {
   registerEnumType,
 } from '@nestjs/graphql';
 import { z } from 'zod';
-
 import { BaseObjectType } from 'src/common/types/base-object.type';
 
 export enum UserRole {

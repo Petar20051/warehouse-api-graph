@@ -1,6 +1,8 @@
 import {
   Field,
+  ID,
   InputType,
+  Int,
   ObjectType,
   registerEnumType,
 } from '@nestjs/graphql';
@@ -31,18 +33,6 @@ export type CreatePartner = z.infer<typeof createPartnerSchema>;
 export type UpdatePartner = z.infer<typeof updatePartnerSchema>;
 
 @ObjectType()
-export class TopCustomerResultType {
-  @Field()
-  partnerId!: string;
-
-  @Field()
-  name!: string;
-
-  @Field()
-  totalOrders!: number;
-}
-
-@ObjectType()
 export class PartnerType extends BaseObjectType {
   @Field()
   companyId!: string;
@@ -64,6 +54,18 @@ export class PartnerType extends BaseObjectType {
 
   @Field(() => [OrderType], { nullable: 'itemsAndList' })
   orders?: OrderType[];
+}
+
+@ObjectType()
+export class TopCustomerResultType {
+  @Field(() => ID)
+  partnerId!: string;
+
+  @Field()
+  name!: string;
+
+  @Field(() => Int)
+  totalOrders!: number;
 }
 
 @InputType()

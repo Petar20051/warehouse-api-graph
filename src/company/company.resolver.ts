@@ -18,7 +18,7 @@ import { Company } from './company.entity';
 import { CompanyService } from './company.service';
 import { BaseResolver } from 'src/common/resolvers/base.resolver';
 import { AuthUser } from 'src/common/types/auth-user';
-import { CurrentUser } from 'src/auth/decorators/user.decorator';
+import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/user/user.types';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -57,13 +57,13 @@ export class CompanyResolver extends BaseResolver<
   }
 
   // @Query(() => [CompanyType], { name: 'getAllCompanies' })
-  override findAll(@CurrentUser() user: AuthUser) {
-    return super.findAll(user);
+  override findAll(@CurrentUser('companyId') companyId: string) {
+    return super.findAll(companyId);
   }
 
   @Query(() => CompanyType, { nullable: true, name: 'getCompanyInfo' })
-  async getCompanyInfo(@CurrentUser() user: AuthUser) {
-    return this.companyService.findOneById(user.companyId);
+  async getCompanyInfo(@CurrentUser('companyId') companyId: string) {
+    return this.companyService.findOneById(companyId);
   }
 
   @Mutation(() => CompanyType, { name: 'createCompany' })
@@ -98,9 +98,9 @@ export class CompanyResolver extends BaseResolver<
   @Roles(UserRole.OWNER)
   override hardDelete(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
-    @CurrentUser() user: AuthUser,
+    @CurrentUser('companyId') companyId: string,
   ) {
-    return super.hardDelete(id, user);
+    return super.hardDelete(id, companyId);
   }
 
   @ResolveField(() => [UserType], { nullable: 'itemsAndList' })

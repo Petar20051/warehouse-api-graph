@@ -1,9 +1,10 @@
 import {
   Field,
+  ID,
   InputType,
   ObjectType,
   registerEnumType,
-  ID,
+  Float,
 } from '@nestjs/graphql';
 import { z } from 'zod';
 
@@ -41,6 +42,9 @@ export class InvoiceType extends BaseObjectType {
 
   @Field(() => OrderType)
   order!: OrderType;
+
+  @Field(() => Float)
+  total!: number;
 }
 
 @InputType()
