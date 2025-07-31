@@ -1,6 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { Repository, DeepPartial, FindOptionsWhere } from 'typeorm';
 import { AuthUser } from '../types/auth-user';
+import { MessagePayload } from 'src/auth/auth.types';
 
 export class BaseService<
   TEntity extends { id: string; companyId?: string },
@@ -56,7 +57,7 @@ export class BaseService<
     return this.repo.save(updated);
   }
 
-  async softDelete(id: string, user: AuthUser): Promise<void> {
+  async softDelete(id: string, user: AuthUser): Promise<MessagePayload> {
     const entity = await this.repo.findOne({
       where: { id } as FindOptionsWhere<TEntity>,
     });
@@ -69,9 +70,10 @@ export class BaseService<
 
     await this.repo.save(checkedEntity);
     await this.repo.softDelete(id);
+    return { message: `${this.repo.metadata.name} soft deleted successfully` };
   }
 
-  async hardDelete(id: string, companyId: string): Promise<void> {
+  async hardDelete(id: string, companyId: string): Promise<MessagePayload> {
     const entity = await this.repo.findOne({
       where: { id } as FindOptionsWhere<TEntity>,
       withDeleted: true,
@@ -79,6 +81,7 @@ export class BaseService<
 
     this.assertCompanyAccess(entity, companyId);
     await this.repo.delete(id);
+    return { message: `${this.repo.metadata.name} hard deleted successfully` };
   }
 
   private assertCompanyAccess(
