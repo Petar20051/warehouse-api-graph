@@ -10,13 +10,7 @@ import {
 import { UseGuards } from '@nestjs/common';
 import { ZodValidationPipe } from 'nestjs-zod';
 
-import {
-  InvoiceType,
-  CreateInvoiceInput,
-  UpdateInvoiceInput,
-  createInvoiceSchema,
-  updateInvoiceSchema,
-} from './invoice.types';
+import { InvoiceType } from './invoice.types';
 import { Invoice } from './invoice.entity';
 import { InvoiceService } from './invoice.service';
 
@@ -26,12 +20,14 @@ import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { UserRole } from 'src/user/user.types';
+import { UserRole } from 'src/user/user.static';
 import { OrderType } from 'src/order/order.types';
 import { OrderService } from 'src/order/order.service';
 import { Order } from 'src/order/order.entity';
 import { OrderItemService } from 'src/orderItem/orderItem.service';
 import { idParamSchema } from 'src/common/types/id-param.static';
+import { CreateInvoiceInput, UpdateInvoiceInput } from './invoice.inputs';
+import { createInvoiceSchema, updateInvoiceSchema } from './invoice.static';
 
 @Resolver(() => InvoiceType)
 @UseGuards(JwtAuthGuard, RolesGuard)

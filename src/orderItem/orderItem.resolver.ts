@@ -11,8 +11,6 @@ import { UseGuards } from '@nestjs/common';
 
 import {
   OrderItemType,
-  CreateOrderItemInput,
-  UpdateOrderItemInput,
   createOrderItemSchema,
   updateOrderItemSchema,
 } from './orderItem.types';
@@ -25,7 +23,7 @@ import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { UserRole } from 'src/user/user.types';
+import { UserRole } from 'src/user/user.static';
 
 import { OrderService } from 'src/order/order.service';
 import { ProductService } from 'src/product/product.service';
@@ -34,6 +32,7 @@ import { ProductType } from 'src/product/product.types';
 
 import { ZodValidationPipe } from 'nestjs-zod';
 import { idParamSchema } from 'src/common/types/id-param.static';
+import { CreateOrderItemInput, UpdateOrderItemInput } from './orderItem.inputs';
 
 @Resolver(() => OrderItemType)
 @UseGuards(JwtAuthGuard, RolesGuard)

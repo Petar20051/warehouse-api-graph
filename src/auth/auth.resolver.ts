@@ -8,23 +8,24 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { CurrentUser } from './decorators/currentUser.decorator';
 
-import {
-  RegisterInput,
-  LoginInput,
-  RegisterUserToCompanyInput,
-  AuthPayloadType,
-  MessagePayload,
-  registerSchema,
-  loginSchema,
-  registerUserToCompanySchema,
-  ChangePasswordInput,
-  changePasswordSchema,
-  ChangeUserRoleInput,
-  changeUserRoleSchema,
-} from './auth.types';
+import { AuthPayloadType, MessagePayload } from './auth.types';
 
 import { AuthUser } from 'src/common/types/auth-user';
-import { UserRole } from 'src/user/user.types';
+import { UserRole } from 'src/user/user.static';
+import {
+  ChangePasswordInput,
+  ChangeUserRoleInput,
+  LoginInput,
+  RegisterInput,
+  RegisterUserToCompanyInput,
+} from './auth.inputs';
+import {
+  changePasswordSchema,
+  changeUserRoleSchema,
+  loginSchema,
+  registerSchema,
+  registerUserToCompanySchema,
+} from './auth.static';
 
 @Resolver()
 export class AuthResolver {

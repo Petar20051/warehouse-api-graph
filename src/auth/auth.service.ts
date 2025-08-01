@@ -7,12 +7,13 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
-import { UserRole } from 'src/user/user.types';
+import { UserRole } from 'src/user/user.static';
 import { AuthUser } from 'src/common/types/auth-user';
 
 import { UserService } from 'src/user/user.service';
 import { CompanyService } from 'src/company/company.service';
 
+import { AuthPayloadType, MessagePayload } from './auth.types';
 import {
   AuthMessages,
   ChangePasswordDto,
@@ -20,9 +21,7 @@ import {
   LoginDto,
   RegisterDto,
   RegisterUserToCompanyDto,
-  AuthPayloadType,
-  MessagePayload,
-} from './auth.types';
+} from './auth.static';
 
 @Injectable()
 export class AuthService {

@@ -1,14 +1,7 @@
 import { Resolver, Query, Mutation, Args } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
 
-import {
-  UserType,
-  CreateUserInput,
-  UpdateUserInput,
-  createUserSchema,
-  updateUserSchema,
-  UserRole,
-} from './user.types';
+import { UserType } from './user.types';
 import { User } from './user.entity';
 import { UserService } from './user.service';
 
@@ -21,6 +14,8 @@ import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 import { ZodValidationPipe } from 'nestjs-zod';
 import { idParamSchema } from 'src/common/types/id-param.static';
+import { CreateUserInput, UpdateUserInput } from './user.inputs';
+import { createUserSchema, updateUserSchema, UserRole } from './user.static';
 
 @Resolver(() => UserType)
 @UseGuards(JwtAuthGuard, RolesGuard)

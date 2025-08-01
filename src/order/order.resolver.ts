@@ -13,18 +13,10 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
-import { UserRole } from 'src/user/user.types';
+import { UserRole } from 'src/user/user.static';
 
 import { OrderService } from './order.service';
-import {
-  OrderType,
-  CreateOrderInput,
-  UpdateOrderInput,
-  createOrderSchema,
-  updateOrderSchema,
-  TransferProductInput,
-  CreateOrderWithItemsInput,
-} from './order.types';
+import { OrderType } from './order.types';
 import { Order } from './order.entity';
 
 import { AuthUser } from 'src/common/types/auth-user';
@@ -41,6 +33,13 @@ import { WarehouseType } from 'src/warehouse/warehouse.types';
 import { PartnerType } from 'src/partner/partner.types';
 import { OrderItemType } from 'src/orderItem/orderItem.types';
 import { InvoiceType } from 'src/invoice/invoice.types';
+import {
+  CreateOrderInput,
+  CreateOrderWithItemsInput,
+  TransferProductInput,
+  UpdateOrderInput,
+} from './order.inputs';
+import { createOrderSchema, updateOrderSchema } from './order.static';
 
 @Resolver(() => OrderType)
 @UseGuards(JwtAuthGuard, RolesGuard)

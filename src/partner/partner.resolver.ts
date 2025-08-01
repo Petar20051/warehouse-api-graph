@@ -9,14 +9,7 @@ import {
 import { UseGuards } from '@nestjs/common';
 import { ZodValidationPipe } from 'nestjs-zod';
 
-import {
-  PartnerType,
-  CreatePartnerInput,
-  UpdatePartnerInput,
-  createPartnerSchema,
-  updatePartnerSchema,
-  TopCustomerResultType,
-} from './partner.types';
+import { PartnerType, TopCustomerResultType } from './partner.types';
 import { Partner } from './partner.entity';
 import { PartnerService } from './partner.service';
 
@@ -26,12 +19,14 @@ import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { UserRole } from 'src/user/user.types';
+import { UserRole } from 'src/user/user.static';
 
 import { OrderService } from 'src/order/order.service';
 import { OrderType } from 'src/order/order.types';
 import { Order } from 'src/order/order.entity';
 import { idParamSchema } from 'src/common/types/id-param.static';
+import { CreatePartnerInput, UpdatePartnerInput } from './partner.inputs';
+import { createPartnerSchema, updatePartnerSchema } from './partner.static';
 
 @Resolver(() => PartnerType)
 @UseGuards(JwtAuthGuard, RolesGuard)

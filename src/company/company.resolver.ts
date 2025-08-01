@@ -7,20 +7,14 @@ import {
   Args,
 } from '@nestjs/graphql';
 import { UseGuards } from '@nestjs/common';
-import {
-  CompanyType,
-  CreateCompanyInput,
-  createCompanySchema,
-  UpdateCompanyInput,
-  updateCompanySchema,
-} from './company.types';
+import { CompanyType } from './company.types';
 import { Company } from './company.entity';
 import { CompanyService } from './company.service';
 import { BaseResolver } from 'src/common/resolvers/base.resolver';
 import { AuthUser } from 'src/common/types/auth-user';
 import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
-import { UserRole } from 'src/user/user.types';
+import { UserRole } from 'src/user/user.static';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 
@@ -37,6 +31,8 @@ import { PartnerType } from 'src/partner/partner.types';
 import { OrderType } from 'src/order/order.types';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { idParamSchema } from 'src/common/types/id-param.static';
+import { CreateCompanyInput, UpdateCompanyInput } from './company.inputs';
+import { createCompanySchema, updateCompanySchema } from './company.static';
 
 @Resolver(() => CompanyType)
 @UseGuards(JwtAuthGuard, RolesGuard)

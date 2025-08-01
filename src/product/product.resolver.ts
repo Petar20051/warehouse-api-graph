@@ -9,14 +9,7 @@ import {
 import { UseGuards } from '@nestjs/common';
 import { ZodValidationPipe } from 'nestjs-zod';
 
-import {
-  ProductType,
-  CreateProductInput,
-  UpdateProductInput,
-  createProductSchema,
-  updateProductSchema,
-  BestSellingProductType,
-} from './product.types';
+import { BestSellingProductType, ProductType } from './product.types';
 import { Product } from './product.entity';
 import { ProductService } from './product.service';
 
@@ -26,12 +19,14 @@ import { CurrentUser } from 'src/auth/decorators/currentUser.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { UserRole } from 'src/user/user.types';
 
 import { OrderItemService } from 'src/orderItem/orderItem.service';
 import { OrderItem } from 'src/orderItem/orderItem.entity';
 import { OrderItemType } from 'src/orderItem/orderItem.types';
 import { idParamSchema } from 'src/common/types/id-param.static';
+import { CreateProductInput, UpdateProductInput } from './product.inputs';
+import { createProductSchema, updateProductSchema } from './product.static';
+import { UserRole } from 'src/user/user.static';
 
 @Resolver(() => ProductType)
 @UseGuards(JwtAuthGuard, RolesGuard)

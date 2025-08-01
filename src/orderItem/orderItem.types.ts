@@ -1,4 +1,4 @@
-import { Field, Float, InputType, ObjectType, ID } from '@nestjs/graphql';
+import { Field, Float, ObjectType, ID } from '@nestjs/graphql';
 import { z } from 'zod';
 
 import { BaseObjectType } from 'src/common/types/base-object.type';
@@ -39,46 +39,4 @@ export class OrderItemType extends BaseObjectType {
 
   @Field(() => ProductType)
   product!: ProductType;
-}
-
-@InputType()
-export class CreateOrderItemInput {
-  @Field(() => ID)
-  orderId!: string;
-
-  @Field(() => ID)
-  productId!: string;
-
-  @Field(() => Float)
-  unitPrice!: number;
-
-  @Field(() => Float)
-  quantity!: number;
-}
-
-@InputType()
-export class CreateOrderItemInFullOrderInput {
-  @Field(() => ID)
-  productId!: string;
-
-  @Field(() => Float)
-  unitPrice!: number;
-
-  @Field(() => Float)
-  quantity!: number;
-}
-
-@InputType()
-export class UpdateOrderItemInput {
-  @Field(() => ID, { nullable: true })
-  orderId?: string;
-
-  @Field(() => ID, { nullable: true })
-  productId?: string;
-
-  @Field(() => Float, { nullable: true })
-  unitPrice?: number;
-
-  @Field(() => Float, { nullable: true })
-  quantity?: number;
 }

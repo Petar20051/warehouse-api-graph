@@ -12,16 +12,16 @@ import { BaseService } from 'src/common/services/base.service';
 import { AuthUser } from 'src/common/types/auth-user';
 import { InvoiceService } from '../invoice/invoice.service';
 import { InvoiceStatus } from '../invoice/invoice.entity';
-import {
-  CreateOrderInput,
-  CreateOrderWithItemsInput,
-  OrderTypeEnum,
-  UpdateOrderInput,
-} from './order.types';
 import { OrderItemService } from 'src/orderItem/orderItem.service';
 import { WarehouseService } from '../warehouse/warehouse.service';
 import { PartnerService } from '../partner/partner.service';
 import { DataSource } from 'typeorm';
+import { OrderTypeEnum } from './order.static';
+import {
+  CreateOrderInput,
+  CreateOrderWithItemsInput,
+  UpdateOrderInput,
+} from './order.inputs';
 
 @Injectable()
 export class OrderService extends BaseService<Order> {
@@ -90,37 +90,42 @@ export class OrderService extends BaseService<Order> {
     dto: Partial<UpdateOrderInput>,
     user: AuthUser,
   ): Promise<Order> {
-    const existing = await this.repo.findOne({
+    const existing: Order | null = await this.repo.findOne({
       where: { id, companyId: user.companyId },
     });
-    if (!existing) throw new ForbiddenError('Order not found or access denied');
 
-    const {
-      warehouseId = existing.warehouseId,
-      partnerId = existing.partnerId,
-      orderType = existing.orderType,
-      notes = existing.notes,
-      date = existing.date,
-    } = { ...existing, ...dto };
+    if (!existing) {
+      throw new ForbiddenError('Order not found or access denied');
+    }
+
+    const warehouseId = dto.warehouseId ?? existing.warehouseId;
+    const partnerId = dto.partnerId ?? existing.partnerId;
+    const orderType = (dto.orderType ?? existing.orderType) as OrderTypeEnum;
+    const notes = dto.notes ?? existing.notes;
+    const date = dto.date ?? existing.date;
 
     if (dto.warehouseId && dto.warehouseId !== existing.warehouseId) {
       await this.warehouseService.findOne(dto.warehouseId, user.companyId);
     }
 
     if (dto.partnerId && dto.partnerId !== existing.partnerId) {
+      if (!orderType) {
+        throw new Error('Order type must be defined to validate partner');
+      }
       await this.validatePartner(dto.partnerId, orderType, user.companyId);
     }
 
     Object.assign(existing, {
       warehouseId,
       partnerId,
-      notes,
       orderType,
+      notes,
       date,
       modifiedByUserId: user.userId,
     });
 
     await this.repo.save(existing);
+
     return this.repo.findOneOrFail({ where: { id: existing.id } });
   }
 

@@ -12,11 +12,11 @@ import { OrderItem } from './orderItem.entity';
 import { BaseService } from 'src/common/services/base.service';
 import { AuthUser } from 'src/common/types/auth-user';
 import { CreateOrderItem, UpdateOrderItem } from './orderItem.types';
-import { OrderTypeEnum } from 'src/order/order.types';
 
 import { OrderService } from 'src/order/order.service';
 import { ProductService } from 'src/product/product.service';
 import { WarehouseService } from 'src/warehouse/warehouse.service';
+import { OrderTypeEnum } from 'src/order/order.static';
 
 @Injectable()
 export class OrderItemService extends BaseService<OrderItem> {

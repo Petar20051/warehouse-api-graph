@@ -10,8 +10,8 @@ import { Repository } from 'typeorm';
 import { Invoice } from './invoice.entity';
 import { BaseService } from 'src/common/services/base.service';
 import { AuthUser } from 'src/common/types/auth-user';
-import { CreateInvoiceInput, UpdateInvoiceInput } from './invoice.types';
 import { OrderService } from 'src/order/order.service';
+import { CreateInvoiceInput, UpdateInvoiceInput } from './invoice.inputs';
 
 @Injectable()
 export class InvoiceService extends BaseService<Invoice> {

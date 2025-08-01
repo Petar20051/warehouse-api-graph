@@ -1,20 +1,8 @@
-import { Field, ID, InputType, ObjectType } from '@nestjs/graphql';
-import { z } from 'zod';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 
 import { BaseObjectType } from 'src/common/types/base-object.type';
 import { OrderType } from 'src/order/order.types';
-import { ProductTypeEnum } from 'src/product/product.types';
-
-export const createWarehouseSchema = z.object({
-  name: z.string().min(2).max(64),
-  location: z.string().min(2).max(128),
-  supportedType: z.enum(['solid', 'liquid']),
-});
-
-export const updateWarehouseSchema = createWarehouseSchema.partial();
-
-export type CreateWarehouse = z.infer<typeof createWarehouseSchema>;
-export type UpdateWarehouse = z.infer<typeof updateWarehouseSchema>;
+import { ProductTypeEnum } from 'src/product/product.static';
 
 @ObjectType()
 export class WarehouseTopStockType {
@@ -50,28 +38,4 @@ export class WarehouseType extends BaseObjectType {
 
   @Field(() => [OrderType], { nullable: 'itemsAndList' })
   orders?: OrderType[];
-}
-
-@InputType()
-export class CreateWarehouseInput {
-  @Field()
-  name!: string;
-
-  @Field()
-  location!: string;
-
-  @Field(() => ProductTypeEnum)
-  supportedType!: ProductTypeEnum;
-}
-
-@InputType()
-export class UpdateWarehouseInput {
-  @Field({ nullable: true })
-  name?: string;
-
-  @Field({ nullable: true })
-  location?: string;
-
-  @Field(() => ProductTypeEnum, { nullable: true })
-  supportedType?: ProductTypeEnum;
 }
