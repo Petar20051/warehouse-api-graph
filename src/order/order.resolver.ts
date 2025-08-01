@@ -111,6 +111,7 @@ export class OrderResolver extends BaseResolver<
   }
 
   @Mutation(() => MessagePayload, { name: 'transferProductBetweenWarehouses' })
+  @Roles(UserRole.OWNER, UserRole.OPERATOR)
   async transferProduct(
     @Args('input') input: TransferProductInput,
     @CurrentUser() user: AuthUser,
@@ -129,6 +130,7 @@ export class OrderResolver extends BaseResolver<
   }
 
   @Mutation(() => OrderType, { name: 'createOrderWithItems' })
+  @Roles(UserRole.OWNER, UserRole.OPERATOR)
   async createOrderWithItems(
     @Args('input') input: CreateOrderWithItemsInput,
     @CurrentUser() user: AuthUser,

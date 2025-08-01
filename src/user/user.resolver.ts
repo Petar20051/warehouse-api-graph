@@ -52,7 +52,7 @@ export class UserResolver extends BaseResolver<
   }
 
   @Mutation(() => UserType, { name: 'updateUser' })
-  @Roles(UserRole.OWNER)
+  @Roles(UserRole.OWNER, UserRole.OPERATOR)
   override update(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @Args('input', new ZodValidationPipe(updateUserSchema))

@@ -87,6 +87,7 @@ export class WarehouseResolver extends BaseResolver<
   }
 
   @Mutation(() => WarehouseType, { name: 'createWarehouse' })
+  @Roles(UserRole.OWNER, UserRole.OPERATOR)
   override create(
     @Args('input', new ZodValidationPipe(createWarehouseSchema))
     input: CreateWarehouseInput,
@@ -96,6 +97,7 @@ export class WarehouseResolver extends BaseResolver<
   }
 
   @Mutation(() => WarehouseType, { name: 'updateWarehouse' })
+  @Roles(UserRole.OWNER, UserRole.OPERATOR)
   override update(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @Args('input', new ZodValidationPipe(updateWarehouseSchema))

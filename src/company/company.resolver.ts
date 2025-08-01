@@ -58,6 +58,7 @@ export class CompanyResolver extends BaseResolver<
   }
 
   @Mutation(() => CompanyType, { name: 'createCompany' })
+  @Roles(UserRole.OWNER)
   override create(
     @Args('input', new ZodValidationPipe(createCompanySchema))
     input: CreateCompanyInput,
@@ -67,6 +68,7 @@ export class CompanyResolver extends BaseResolver<
   }
 
   @Mutation(() => CompanyType, { name: 'updateCompany' })
+  @Roles(UserRole.OWNER, UserRole.OPERATOR)
   override update(
     @Args('id', new ZodValidationPipe(idParamSchema)) id: string,
     @Args('input', new ZodValidationPipe(updateCompanySchema))
