@@ -12,7 +12,7 @@ registerEnumType(PartnerTypeEnum, {
 
 export const createPartnerSchema = z.object({
   name: z.string().min(2).max(64),
-  type: z.enum(['customer', 'supplier']),
+  type: z.nativeEnum(PartnerTypeEnum),
   email: z.string().email(),
   phone: z.string().min(6).max(32),
   address: z.string().min(2).max(128),

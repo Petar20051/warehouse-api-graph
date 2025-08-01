@@ -11,6 +11,8 @@ import { OrderItem } from '../orderItem/orderItem.entity';
 import { WarehouseTopStockType } from './warehouse.types';
 import { AuthUser } from 'src/common/types/auth-user';
 import { UpdateWarehouseInput } from './warehouse.inputs';
+import { MessagePayload } from 'src/auth/auth.types';
+import { Order } from 'src/order/order.entity';
 
 @Injectable()
 export class WarehouseService extends BaseService<Warehouse> {
@@ -20,6 +22,8 @@ export class WarehouseService extends BaseService<Warehouse> {
 
     @InjectRepository(OrderItem)
     private readonly orderItemRepo: Repository<OrderItem>,
+    @InjectRepository(Order)
+    private readonly orderRepo: Repository<Order>,
   ) {
     super(warehouseRepo);
   }
@@ -138,5 +142,44 @@ export class WarehouseService extends BaseService<Warehouse> {
       .addGroupBy('warehouse.name')
       .orderBy('stock', 'DESC')
       .getRawMany<WarehouseTopStockType>();
+  }
+
+  override async softDelete(
+    id: string,
+    user: AuthUser,
+  ): Promise<MessagePayload> {
+    const warehouse = await this.findOne(id, user.companyId);
+    const orders = await this.orderRepo.count({
+      where: { warehouseId: warehouse?.id },
+    });
+
+    if (orders > 0) {
+      throw new BadRequestException(
+        'Cannot delete a warehouse with existing orders.',
+      );
+    }
+
+    await super.softDelete(id, user);
+    return { message: 'Warehouse deleted successfully.' };
+  }
+
+  override async hardDelete(
+    id: string,
+    companyId: string,
+  ): Promise<MessagePayload> {
+    const warehouse = await this.findOne(id, companyId);
+
+    const orders = await this.orderRepo.count({
+      where: { warehouseId: warehouse?.id },
+    });
+
+    if (orders > 0) {
+      throw new BadRequestException(
+        'Cannot hard delete a warehouse with existing orders.',
+      );
+    }
+
+    await super.hardDelete(id, companyId);
+    return { message: 'Warehouse permanently deleted.' };
   }
 }

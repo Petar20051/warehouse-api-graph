@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -117,6 +118,20 @@ export class AuthService {
       currentUser.companyId,
     );
     if (!user) throw new NotFoundException('User not found');
+
+    if (
+      user.id === currentUser.userId &&
+      user.role === UserRole.OWNER &&
+      dto.role !== UserRole.OWNER
+    ) {
+      const owners = await this.userService.countOwners(currentUser.companyId);
+
+      if (owners <= 1) {
+        throw new BadRequestException(
+          'You cannot downgrade yourself as the last remaining OWNER',
+        );
+      }
+    }
 
     await this.userService.update(user.id, { role: dto.role });
 

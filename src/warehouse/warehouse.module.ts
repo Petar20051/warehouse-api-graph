@@ -9,10 +9,11 @@ import { WarehouseAuditResolver } from 'src/common/resolvers/audit-resolvers';
 import { OrderItem } from '../orderItem/orderItem.entity';
 import { OrderModule } from 'src/order/order.module';
 import { UserModule } from 'src/user/user.module';
+import { Order } from 'src/order/order.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Warehouse, OrderItem]),
+    TypeOrmModule.forFeature([Warehouse, OrderItem, Order]),
     forwardRef(() => OrderModule),
     UserModule,
   ],

@@ -136,10 +136,6 @@ export class OrderService extends BaseService<Order> {
     toWarehouseId: string,
     user: AuthUser,
   ): Promise<{ shipmentId: string; deliveryId: string }> {
-    if (quantity <= 0) {
-      throw new BadRequestException('Quantity must be greater than zero.');
-    }
-
     if (fromWarehouseId === toWarehouseId) {
       throw new BadRequestException(
         'Source and destination must be different.',
@@ -155,7 +151,11 @@ export class OrderService extends BaseService<Order> {
         toWarehouseId,
         user.companyId,
       );
-
+      if (fromWarehouse?.supportedType !== toWarehouse?.supportedType) {
+        throw new BadRequestException(
+          'Source and destination must be different.',
+        );
+      }
       const shipment = await this.createWithUserContext(
         {
           warehouseId: fromWarehouseId,
