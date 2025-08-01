@@ -54,6 +54,16 @@ export class OrderItemService extends BaseService<OrderItem> {
     return this.repo.find({ where: { orderId } });
   }
 
+  async findTotalByOrder(orderId: string) {
+    const items = await this.repo.find({ where: { orderId } });
+    return items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+  }
+
+  async findTotalForCurrentItem(id: string, companyId: string) {
+    const item = await this.findOne(id, companyId);
+    if (item) return item?.quantity * item.unitPrice;
+  }
+
   async findByProduct(productId: string) {
     return this.repo.find({ where: { productId } });
   }

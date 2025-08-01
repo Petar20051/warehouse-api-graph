@@ -118,7 +118,13 @@ export class OrderItemResolver extends BaseResolver<
   }
 
   @ResolveField(() => Float)
-  total(@Parent() item: OrderItem): number {
-    return item.quantity * item.unitPrice;
+  async total(
+    @Parent() item: OrderItem,
+    @CurrentUser('companyId') companyId: string,
+  ): Promise<number | undefined> {
+    return await this.orderItemService.findTotalForCurrentItem(
+      item.id,
+      companyId,
+    );
   }
 }

@@ -106,7 +106,6 @@ export class InvoiceResolver extends BaseResolver<
 
   @ResolveField(() => Float)
   async total(@Parent() invoice: Invoice): Promise<number> {
-    const items = await this.orderItemService.findByOrder(invoice.orderId);
-    return items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
+    return await this.orderItemService.findTotalByOrder(invoice.orderId);
   }
 }
