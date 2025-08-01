@@ -7,6 +7,7 @@ import { BestSellingProductType } from './product.types';
 import { OrderItem } from 'src/orderItem/orderItem.entity';
 import { AuthUser } from 'src/common/types/auth-user';
 import { MessagePayload } from 'src/auth/auth.types';
+import { UpdateProductInput } from './product.inputs';
 
 @Injectable()
 export class ProductService extends BaseService<Product> {
@@ -37,6 +38,33 @@ export class ProductService extends BaseService<Product> {
       .groupBy('product.id')
       .limit(5)
       .getRawMany<BestSellingProductType>();
+  }
+
+  override async updateWithUserContext(
+    id: string,
+    data: Partial<UpdateProductInput>,
+    user: AuthUser,
+  ): Promise<Product> {
+    const existing = await this.findOne(id, user.companyId);
+    if (!existing) throw new BadRequestException('Product not found');
+
+    if (data.productType && data.productType !== existing.productType) {
+      const used = await this.orderItemRepo.count({
+        where: { productId: existing.id },
+      });
+
+      if (used > 0) {
+        throw new BadRequestException(
+          'Cannot change product type. This product is already used in order items.',
+        );
+      }
+    }
+
+    const updated = await super.updateWithUserContext(id, data, user);
+    if (!updated) {
+      throw new BadRequestException('Failed to update product.');
+    }
+    return updated;
   }
 
   override async softDelete(
