@@ -2,6 +2,14 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
+type AuthPayloadType {
+  accessToken: String!
+}
+
+type MessagePayload {
+  message: String!
+}
+
 type UserType {
   id: ID!
   createdAt: DateTime!
@@ -24,14 +32,6 @@ enum UserRole {
   OWNER
   OPERATOR
   VIEWER
-}
-
-type AuthPayloadType {
-  accessToken: String!
-}
-
-type MessagePayload {
-  message: String!
 }
 
 type WarehouseTopStockType {

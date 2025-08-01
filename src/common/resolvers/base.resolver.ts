@@ -1,6 +1,7 @@
 import { BaseService } from '../services/base.service';
 import { DeepPartial } from 'typeorm';
 import { AuthUser } from '../types/auth-user';
+import { MessagePayload } from 'src/auth/auth.types';
 
 export abstract class BaseResolver<
   T extends { id: string; companyId?: string },
@@ -25,11 +26,11 @@ export abstract class BaseResolver<
     return this.service.updateWithUserContext(id, dto, user);
   }
 
-  async softDelete(id: string, user: AuthUser): Promise<void> {
+  async softDelete(id: string, user: AuthUser): Promise<MessagePayload> {
     return this.service.softDelete(id, user);
   }
 
-  async hardDelete(id: string, companyId: string): Promise<void> {
+  async hardDelete(id: string, companyId: string): Promise<MessagePayload> {
     return this.service.hardDelete(id, companyId);
   }
 }

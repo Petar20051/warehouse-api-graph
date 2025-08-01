@@ -14,7 +14,7 @@ export class UpdateOrderInput {
   orderType?: OrderTypeEnum;
 
   @Field({ nullable: true })
-  notes?: string | null;
+  notes?: string;
 
   @Field({ nullable: true })
   date?: Date;

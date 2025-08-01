@@ -1,6 +1,6 @@
 import { Entity, Column } from 'typeorm';
 import { BaseEntity } from 'src/common/entities/base.entity';
-import { ProductTypeEnum } from './product.types';
+import { ProductTypeEnum } from './product.static';
 
 @Entity('product')
 export class Product extends BaseEntity {

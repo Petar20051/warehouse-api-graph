@@ -100,7 +100,7 @@ export class OrderService extends BaseService<Order> {
 
     const warehouseId = dto.warehouseId ?? existing.warehouseId;
     const partnerId = dto.partnerId ?? existing.partnerId;
-    const orderType = (dto.orderType ?? existing.orderType) as OrderTypeEnum;
+    const orderType = dto.orderType ?? existing.orderType;
     const notes = dto.notes ?? existing.notes;
     const date = dto.date ?? existing.date;
 
