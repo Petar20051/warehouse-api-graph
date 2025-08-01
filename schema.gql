@@ -193,6 +193,10 @@ type Query {
   getCompanyInfo: CompanyType
   getAllProducts: [ProductType!]!
   getProductById(id: String!): ProductType
+
+  """
+  Returns best-selling products for a company, based on shipment order quantities.
+  """
   getBestSellingProducts: [BestSellingProductType!]!
   getAllOrderItems: [OrderItemType!]!
   getOrderItemById(id: String!): OrderItemType
@@ -202,10 +206,20 @@ type Query {
   getInvoiceById(id: String!): InvoiceType
   getAllWarehouses: [WarehouseType!]!
   getWarehouseById(id: String!): WarehouseType
+
+  """
+  Returns products with the highest stock across all warehouses for a company. Stock = deliveries - shipments.
+  """
   getProductWithHighestStock: [WarehouseTopStockType!]
+
+  """
+  Returns product stock breakdown for a given warehouse. Ensures the warehouse belongs to the company.
+  """
   getWarehouseStockBreakdown(warehouseId: String!): [WarehouseTopStockType!]
   getAllPartners: [PartnerType!]!
   getPartnerById(id: String!): PartnerType
+
+  """Returns the customer with the highest number of orders for a company."""
   getTopCustomerByOrders: TopCustomerResultType
 }
 

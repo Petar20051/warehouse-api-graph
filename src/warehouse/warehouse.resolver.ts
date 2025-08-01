@@ -61,6 +61,8 @@ export class WarehouseResolver extends BaseResolver<
   @Query(() => [WarehouseTopStockType], {
     name: 'getProductWithHighestStock',
     nullable: true,
+    description:
+      'Returns products with the highest stock across all warehouses for a company. Stock = deliveries - shipments.',
   })
   async getProductWithHighestStock(
     @CurrentUser('companyId') companyId: string,
@@ -71,6 +73,8 @@ export class WarehouseResolver extends BaseResolver<
   @Query(() => [WarehouseTopStockType], {
     name: 'getWarehouseStockBreakdown',
     nullable: true,
+    description:
+      'Returns product stock breakdown for a given warehouse. Ensures the warehouse belongs to the company.',
   })
   async getWarehouseStockBreakdown(
     @Args('warehouseId', { type: () => String }) warehouseId: string,

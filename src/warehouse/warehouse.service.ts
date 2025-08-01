@@ -1,10 +1,16 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { BaseService } from 'src/common/services/base.service';
 import { Warehouse } from './warehouse.entity';
 import { OrderItem } from '../orderItem/orderItem.entity';
 import { WarehouseTopStockType } from './warehouse.types';
+import { AuthUser } from 'src/common/types/auth-user';
+import { UpdateWarehouseInput } from './warehouse.inputs';
 
 @Injectable()
 export class WarehouseService extends BaseService<Warehouse> {
@@ -16,6 +22,42 @@ export class WarehouseService extends BaseService<Warehouse> {
     private readonly orderItemRepo: Repository<OrderItem>,
   ) {
     super(warehouseRepo);
+  }
+
+  override async updateWithUserContext(
+    id: string,
+    input: UpdateWarehouseInput,
+    user: AuthUser,
+  ): Promise<Warehouse> {
+    const existing = await this.repo.findOneOrFail({
+      where: { id, companyId: user.companyId },
+    });
+
+    const isChangingType =
+      input.supportedType && input.supportedType !== existing.supportedType;
+
+    if (isChangingType) {
+      const count = await this.orderItemRepo
+        .createQueryBuilder('orderItem')
+        .innerJoin('orders', 'o', 'orderItem.order_id = o.id')
+        .where('o.warehouse_id = :warehouseId', { warehouseId: id })
+        .andWhere('orderItem.deleted_at IS NULL')
+        .andWhere('o.deleted_at IS NULL')
+        .getCount();
+
+      if (count > 0) {
+        throw new BadRequestException(
+          'Cannot change supportedType: warehouse has order items.',
+        );
+      }
+    }
+
+    const updated = this.repo.merge(existing, {
+      ...input,
+      modifiedByUserId: user.userId,
+    });
+
+    return this.repo.save(updated);
   }
 
   async getProductWithHighestStock(

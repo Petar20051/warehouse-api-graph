@@ -58,6 +58,8 @@ export class PartnerResolver extends BaseResolver<
   @Query(() => TopCustomerResultType, {
     name: 'getTopCustomerByOrders',
     nullable: true,
+    description:
+      'Returns the customer with the highest number of orders for a company.',
   })
   async getTopCustomerByOrders(
     @CurrentUser() user: AuthUser,

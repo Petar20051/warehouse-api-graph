@@ -13,6 +13,7 @@ export class ProductService extends BaseService<Product> {
   ) {
     super(productRepo);
   }
+
   async getBestSellingProducts(
     companyId: string,
   ): Promise<BestSellingProductType[]> {

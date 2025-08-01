@@ -30,7 +30,7 @@ export class OrderItemService extends BaseService<OrderItem> {
     super(repo);
   }
 
-  async findAllByCompany(companyId: string): Promise<OrderItem[]> {
+  override async findAllByCompany(companyId: string): Promise<OrderItem[]> {
     return this.repo
       .createQueryBuilder('orderItem')
       .innerJoin('orders', 'o', 'orderItem.order_id = o.id')
@@ -38,7 +38,10 @@ export class OrderItemService extends BaseService<OrderItem> {
       .getMany();
   }
 
-  async findOne(id: string, companyId: string): Promise<OrderItem | null> {
+  override async findOne(
+    id: string,
+    companyId: string,
+  ): Promise<OrderItem | null> {
     return this.repo
       .createQueryBuilder('orderItem')
       .innerJoin('orders', 'o', 'orderItem.order_id = o.id')

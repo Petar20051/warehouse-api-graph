@@ -55,7 +55,11 @@ export class ProductResolver extends BaseResolver<
     return super.findOne(id, companyId);
   }
 
-  @Query(() => [BestSellingProductType], { name: 'getBestSellingProducts' })
+  @Query(() => [BestSellingProductType], {
+    name: 'getBestSellingProducts',
+    description:
+      'Returns best-selling products for a company, based on shipment order quantities.',
+  })
   getBestSellingProducts(@CurrentUser('companyId') companyId: string) {
     return this.productService.getBestSellingProducts(companyId);
   }

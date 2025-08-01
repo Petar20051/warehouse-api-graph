@@ -52,11 +52,6 @@ export class CompanyResolver extends BaseResolver<
     super(companyService);
   }
 
-  // @Query(() => [CompanyType], { name: 'getAllCompanies' })
-  override findAll(@CurrentUser('companyId') companyId: string) {
-    return super.findAll(companyId);
-  }
-
   @Query(() => CompanyType, { nullable: true, name: 'getCompanyInfo' })
   async getCompanyInfo(@CurrentUser('companyId') companyId: string) {
     return this.companyService.findOneById(companyId);

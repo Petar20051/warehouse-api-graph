@@ -24,7 +24,7 @@ export class InvoiceService extends BaseService<Invoice> {
     super(invoiceRepo);
   }
 
-  async findAllByCompany(companyId: string): Promise<Invoice[]> {
+  override async findAllByCompany(companyId: string): Promise<Invoice[]> {
     return this.repo
       .createQueryBuilder('invoice')
       .innerJoin('orders', 'o', 'invoice.order_id = o.id')
